@@ -1,0 +1,27 @@
+{
+  "project": "Lucide",
+  "repository": "https://github.com/lucide-icons/lucide",
+  "commit": "a04f228cd01185e09c188b7227b9600c08c565ec",
+  "upstream_svg_sha256": {
+    "list": "ff97a7379eb962ddc3863bb59f0f45875ac8da91aac8a38a67361e7118d2d627",
+    "tag": "85e11c07b29f5b67410e0f14c84799d9406320cd4575b7c8322f31910e0582cc",
+    "sliders-horizontal": "e43a00e5eb684e6cbb61083bed2528d7a3fa5f265693eb2b5f314cd432aa65f4",
+    "info": "bc977a64eb96f3e9c1041ffd09a3fceb70e3e65c02b571f76064062ed31f3cb9",
+    "folder": "f0d92b94b797a8ab7d4c4ae33c3236c47f64068351b4e14bdb5014ee42898a39",
+    "share": "be8870646f636f4db03fd2d1d5db4912a1ab03ce2cfcc5daacc15fa8e105dbc2",
+    "pin": "55e8e5e04bcb671179fc1dd589abf09cf6a1e71301ff14eb739419cfab6011e7",
+    "pin-off": "149a4fb01201562c05dd7eb53573090cd3a0ba5b111686c45e2df8c6cd04a3be",
+    "chevrons-right": "3491f9fe180bf75a058d480f32a0d26ff6a97c6c9a70315c77df7c6b75329d91",
+    "zoom-in": "91206ae20013e2c84f2f5d09db5a7200f11698a84fc4e857b06fab2ce7c933f1",
+    "zoom-out": "28e7849b55bb9b34cb24be83b4e8ef58f2ae164fc451fbd60e026bfb507d2921",
+    "minimize-2": "1150437d5a870321c59b7ebca2e1bc3f6227f0fa03dd10484ab384dfe5110739",
+    "chevron-left": "83b0681aa38bf55e9d52a1e4b4cced624abe1fe7678ecafda133a574f1161d93",
+    "chevron-right": "2758143d7b2434e4aa7307dfd34405c87909ff4052f21b5f3f40d45224b4f19b",
+    "play": "d7c34786135922a92b6896f6c2384ceeb0346afbf6041dc79982011411409833",
+    "pause": "f122ec4ea7f5693a0b1baafa9c708b53980dc87b4aacb297c6e6f71c1a4c115c",
+    "rotate-cw": "ddcfe6d87240475946935e77411cd4d15a06f3d28a9b921bafed224ebe953668",
+    "maximize": "1f790856b0de805ab62e871609f1990b89d227d472022e57a11fde015aad4826",
+    "external-link": "3891241b8c3bfc3a8a930078f26ffc5a7e9763da6d0162ace2050b28d4c1d1fe",
+    "pipette": "dad18ee11312000529dbfaa6c60fa8da00773eebe91e23633d8f4baca8421cdc"
+  }
+}

@@ -1,0 +1,14 @@
+.DS_Store
+.build/
+dist/
+.swiftpm/
+
+# Local design and engineering records
+.impeccable/
+DESIGN.md
+IMPLEMENTATION.md
+PRODUCT.md
+VERIFICATION.md
+docs/history/
+docs/REORGANIZATION.md
+docs/RELEASE-VERIFICATION.md
