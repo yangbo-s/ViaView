@@ -25,8 +25,7 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
     let fileList = FileListController()
     let tagsController = TagsPanelController()
     var tagsPanel: NSPanel?
-    let inspector = NSScrollView()
-    let inspectorStack = NSStackView()
+    let inspector = InspectorContentView(frame: NSRect(x: 0, y: 0, width: 320, height: 440))
     let glassLayer = GlassLayer(frame: .zero)
     let topChrome = ChromeRow()
     let bottomChrome = ChromeRow()
@@ -66,11 +65,14 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
     var toolGroups: [GlassChrome] = []
     var titleUsesCanvas = false
     var topChromeTop: NSLayoutConstraint?
-    var windowButtons: [NSButton] = []
+    var windowButtons: [NSButton] {
+        [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].compactMap { window?.standardWindowButton($0) }
+    }
+    var compactTools: GlassChrome?
     let moreButton = toolbarButton(.more, "更多操作", target: nil, action: #selector(showMore(_:)), size: 32)
 
     init() {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1080, height: 720), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 420), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.title = "ViaView"; window.titleVisibility = .hidden; window.titlebarAppearsTransparent = true
         let nativeToolbar = NSToolbar(identifier: "ViaViewWindowControls")
         nativeToolbar.displayMode = .iconOnly
@@ -87,8 +89,12 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
         stage.onPointer = { [weak self] in self?.pointer($0) }
         scroll.onZoom = { [weak self] in self?.zoom($0) }
         zoomDriver.apply = { [weak self] in self?.applyZoom($0) }
-        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .leftMouseDown, .rightMouseDown, .scrollWheel, .magnify]) { [weak self] event in
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .mouseMoved, .leftMouseDown, .rightMouseDown, .scrollWheel, .magnify]) { [weak self] event in
             if let self, event.window === self.window {
+                if event.type == .keyDown {
+                    if self.handleFullScreenExit(event) { return nil }
+                    return event
+                }
                 let point = self.stage.convert(event.locationInWindow, from: nil)
                 let contextClick = event.type == .rightMouseDown || (event.type == .leftMouseDown && event.modifierFlags.contains(.control))
                 if contextClick, self.gallery.current != nil, self.stage.bounds.contains(point), self.glassLayer.hitTest(point) == nil {
@@ -113,6 +119,21 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
 
     @objc func toggleAnimation(_ sender: Any?) { canvas.animates.toggle() }
     @objc func alwaysOnTop(_ sender: Any?) { window?.level = window?.level == .floating ? .normal : .floating; updateTopActions() }
+    func windowDidUpdate(_ notification: Notification) {
+        // Native titlebar controls finish laying out after key/resize callbacks.
+        // Align against their final position, including first display and toolbar restoration.
+        layoutChrome()
+        if chromeVisible {
+            let available = stage.bounds.width >= 170 && stage.bounds.height >= 100
+            topChrome.isHidden = !available
+            bottomChrome.isHidden = asset == nil || !available || stage.bounds.height < 180
+            windowButtons.forEach { $0.isHidden = !available }
+        }
+    }
+    func windowDidBecomeKey(_ notification: Notification) {
+        windowButtons.forEach { $0.needsDisplay = true }
+        layoutChrome(); refreshChrome()
+    }
     func windowDidBecomeMain(_ notification: Notification) {
         guard notification.object as? NSWindow === window else { return }
         (NSApp.delegate as? AppDelegate)?.lastActiveViewer = self

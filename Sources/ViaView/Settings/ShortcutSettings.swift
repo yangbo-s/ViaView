@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 struct ShortcutSettings: View {
     @State private var search = ""
     private var entries: [(group: String, title: String, key: String)] {
-        (NSApp.mainMenu?.items ?? []).flatMap { section in
+        let menuEntries: [(group: String, title: String, key: String)] = (NSApp.mainMenu?.items ?? []).flatMap { section in
             (section.submenu?.items ?? []).compactMap { item in
                 guard !item.keyEquivalent.isEmpty else { return nil }
                 var key = ""
@@ -18,6 +18,7 @@ struct ShortcutSettings: View {
                 return (section.title, item.title, key)
             }
         }
+        return menuEntries + [("显示", "退出全屏", "Esc / Delete")]
     }
     var body: some View {
         VStack(spacing: 0) {

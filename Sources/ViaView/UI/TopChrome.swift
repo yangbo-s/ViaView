@@ -52,9 +52,6 @@ extension ViewerController {
         let traffic = NSView(); traffic.translatesAutoresizingMaskIntoConstraints = false
         let trafficWidth = traffic.widthAnchor.constraint(equalToConstant: 80)
         NSLayoutConstraint.activate([trafficWidth, traffic.heightAnchor.constraint(equalToConstant: 36)])
-        for kind in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
-            if let button = window?.standardWindowButton(kind) { windowButtons.append(button) }
-        }
         nameLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         nameLabel.setContentHuggingPriority(NSLayoutConstraint.Priority(1), for: .horizontal)
         nameLabel.wantsLayer = true
@@ -76,6 +73,10 @@ extension ViewerController {
             action(.pipette, "取色并复制色号 · ⌘E", #selector(pickColor(_:))),
             action(.adjustments, "图像调整 · ⌘F", #selector(toggleAdjustments(_:))),
             action(.info, "图片信息 · ⌘I", #selector(toggleInfo(_:)))])
+        let essentials = group([
+            action(.list, "文件列表 · ⌘B", #selector(toggleFileList(_:))),
+            action(.tag, "Finder 标签", #selector(editTags(_:)))])
+        compactTools = essentials
         let files = group([
             action(.folder, "在 Finder 中显示", #selector(reveal(_:))),
             action(.share, "分享图片", #selector(share(_:)))])
@@ -100,7 +101,7 @@ extension ViewerController {
         moreButton.target = self
         let overflow = group([moreButton])
         toolGroups = [tools, files, preview, pinGroup]
-        let stack = NSStackView(views: [traffic, nameLabel] + toolGroups + [overflow])
+        let stack = NSStackView(views: [traffic, nameLabel, essentials] + toolGroups + [overflow])
         stack.spacing = 8; stack.alignment = .centerY; stack.detachesHiddenViews = true
         stack.setCustomSpacing(16, after: traffic)
         pin(stack, to: topChrome)

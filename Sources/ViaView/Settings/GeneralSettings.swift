@@ -36,7 +36,7 @@ struct GeneralSettings: View {
                     Text("滚轮缩放速度")
                     Spacer()
                     Text("慢").foregroundStyle(.secondary)
-                    Slider(value: $sensitivity, in: 0.3...2).frame(width: 160).accessibilityLabel("滚轮缩放速度")
+                    Slider(value: $sensitivity, in: 0.3...2).labelsHidden().frame(width: 160).accessibilityLabel("滚轮缩放速度")
                     Text("快").foregroundStyle(.secondary)
                 }
                 Toggle("触控板左右轻扫切换图片", isOn: $swipe)

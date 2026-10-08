@@ -2,64 +2,132 @@ import AppKit
 import ViewerCore
 
 extension ViewerController {
-    func buildInspector() {
-        inspector.hasVerticalScroller = true; inspector.drawsBackground = true; inspector.borderType = .noBorder
-        inspector.documentView = FlippedDocument(frame: NSRect(x: 0, y: 0, width: 280, height: 600))
-        inspectorStack.orientation = .vertical; inspectorStack.alignment = .leading; inspectorStack.spacing = 14
-        inspector.documentView?.addSubview(inspectorStack)
-        rebuildInspector()
-    }
+    func buildInspector() { rebuildInspector() }
+
     func rebuildInspector() {
-        for view in inspectorStack.arrangedSubviews { inspectorStack.removeArrangedSubview(view); view.removeFromSuperview() }
+        inspector.clear()
         sliderLabels.removeAll()
-        func add(_ view: NSView, height: CGFloat? = nil) {
-            view.translatesAutoresizingMaskIntoConstraints = false
-            view.widthAnchor.constraint(equalToConstant: 248).isActive = true
-            if let height { view.heightAnchor.constraint(equalToConstant: height).isActive = true }
-            inspectorStack.addArrangedSubview(view)
-        }
-        let header = NSStackView(views: [label(inspectorMode.title, size: 17, weight: .semibold), symbolButton("xmark", "收起面板", target: self, action: #selector(closeInspector(_:)), size: 24)])
-        header.distribution = .equalSpacing; add(header)
         guard let asset else {
-            add(label("打开图片后在这里查看详情。", color: .secondaryLabelColor)); layoutInspector(); return
+            inspector.add(label("打开图片后查看详情与调整。", color: .secondaryLabelColor))
+            layoutInspector()
+            return
         }
-        if inspectorMode == .information {
-            if !asset.isSVG { let histogram = HistogramView(); histogram.update(displayedCG); add(histogram, height: 90) }
-            var metadata = asset.isSVG ? [("文件", asset.url.lastPathComponent), ("格式", "SVG · 矢量图像")] : asset.metadata.map { ($0.0 == "尺寸" ? "原始尺寸" : $0.0, $0.1) }
-            if !edits.isIdentity, let cg = displayedCG { metadata.insert(("当前预览", "\(cg.width) × \(cg.height) px"), at: min(2, metadata.count)) }
-            for (title, value) in metadata {
-                let valueField = label(value, size: 12); valueField.isSelectable = true; valueField.maximumNumberOfLines = 4; valueField.lineBreakMode = .byWordWrapping
-                let pair = NSStackView(views: [label(title, size: 11, color: .secondaryLabelColor), valueField]); pair.orientation = .vertical; pair.alignment = .leading; pair.spacing = 4
-                add(pair)
-            }
-            let path = label(asset.url.deletingLastPathComponent().path, size: 11, color: .secondaryLabelColor)
-            path.isSelectable = true; path.maximumNumberOfLines = 3; path.lineBreakMode = .byTruncatingMiddle; add(path)
-            let reveal = NSButton(title: "在 Finder 中显示", target: self, action: #selector(reveal(_:))); reveal.bezelStyle = .rounded; add(reveal)
-            let ocr = NSButton(title: "识别图片文字…", target: self, action: #selector(recognizeText(_:))); ocr.bezelStyle = .rounded; ocr.isEnabled = displayedCG != nil; add(ocr)
-            let inspect = NSButton(title: "取色并复制色号", target: self, action: #selector(pickColor(_:))); inspect.bezelStyle = .rounded; inspect.isEnabled = gallery.current != nil && !samplingColor; add(inspect)
-        } else if asset.isSVG {
-            add(label("SVG 保持矢量显示。\n像素调整用于位图图像。", color: .secondaryLabelColor))
-        } else {
-            let note = label("调整只影响预览，导出另存为。", size: 11, color: .secondaryLabelColor); add(note)
-            let rotations = NSStackView(views: [symbolButton("rotate.left", "向左旋转", target: self, action: #selector(rotateLeft(_:))), symbolButton("rotate.right", "向右旋转", target: self, action: #selector(rotateRight(_:))), symbolButton("arrow.left.and.right.righttriangle.left.righttriangle.right", "水平镜像", target: self, action: #selector(flip(_:)))])
-            rotations.distribution = .equalSpacing; add(rotations)
-            let popup = NSPopUpButton(); popup.addItems(withTitles: ImageEdits.filters.map(\.0)); popup.selectItem(at: ImageEdits.filters.firstIndex { $0.1 == edits.filter } ?? 0); popup.target = self; popup.action = #selector(filterChanged(_:)); popup.setAccessibilityLabel("照片滤镜"); add(popup)
-            let values: [(String, String, Double, Double, Double)] = [("brightness", "亮度", edits.brightness, -1, 1), ("contrast", "对比度", edits.contrast, 0, 2), ("saturation", "饱和度", edits.saturation, 0, 2), ("exposure", "曝光", edits.exposure, -2, 2)]
-            for (key, title, value, minimum, maximum) in values {
-                let caption = label(String(format: "%@    %.2f", title, value), size: 12); sliderLabels[key] = caption; add(caption)
-                let slider = NSSlider(value: value, minValue: minimum, maxValue: maximum, target: self, action: #selector(sliderChanged(_:)))
-                slider.identifier = NSUserInterfaceItemIdentifier(key); slider.isContinuous = true; slider.setAccessibilityLabel(title); add(slider)
-            }
-            let reset = NSButton(title: "重置所有调整", target: self, action: #selector(resetEdits(_:))); reset.bezelStyle = .rounded; add(reset)
-            let export = NSButton(title: "导出图片…", target: self, action: #selector(exportImage(_:))); export.bezelStyle = .rounded; add(export)
-            if asset.frameCount > 1 { let note = label("调整和导出使用动画首帧；重置后恢复播放。", size: 11, color: .secondaryLabelColor); note.maximumNumberOfLines = 3; note.lineBreakMode = .byWordWrapping; add(note) }
-        }
+        let thumbnail = NSImageView(image: asset.image)
+        thumbnail.imageScaling = .scaleProportionallyUpOrDown
+        thumbnail.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([thumbnail.widthAnchor.constraint(equalToConstant: 52), thumbnail.heightAnchor.constraint(equalToConstant: 52)])
+        let filename = label(asset.url.lastPathComponent, size: 13, weight: .semibold)
+        filename.toolTip = asset.url.lastPathComponent
+        filename.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        let summary = label(asset.isSVG ? "SVG · 矢量图像" : "\(asset.pixelWidth) × \(asset.pixelHeight) px · \(asset.url.pathExtension.uppercased())", size: 11, color: .secondaryLabelColor)
+        let details = NSStackView(views: [filename, summary])
+        details.orientation = .vertical; details.alignment = .leading; details.spacing = 5
+        let identity = NSStackView(views: [thumbnail, details])
+        identity.spacing = 12; identity.alignment = .centerY
+        inspector.add(identity)
+        inspector.add(inspectorSeparator())
+        if inspectorMode == .information { buildImageInformation(asset) }
+        else if asset.cgImage == nil {
+            inspector.add(label("矢量图像保持原始显示，无需像素调整。", color: .secondaryLabelColor))
+        } else { buildImageAdjustments(asset) }
         layoutInspector()
     }
-    func layoutInspector() {
-        let height = inspectorStack.fittingSize.height
-        inspectorStack.frame = NSRect(x: 16, y: 44, width: 248, height: height)
-        inspector.documentView?.frame = NSRect(x: 0, y: 0, width: 280, height: max(200, height + 64))
+
+    private func buildImageInformation(_ asset: ImageAsset) {
+        if !asset.isSVG {
+            let histogram = HistogramView()
+            histogram.update(displayedCG)
+            histogram.heightAnchor.constraint(equalToConstant: 88).isActive = true
+            histogram.setAccessibilityLabel("红、绿、蓝通道直方图")
+            inspector.add(inspectorSection("直方图", views: [histogram]))
+        }
+        var metadata = asset.metadata.filter { $0.0 != "文件" }
+        if !edits.isIdentity, let cg = displayedCG { metadata.insert(("当前预览", "\(cg.width) × \(cg.height) px"), at: 1) }
+        let captureFields: Set<String> = ["相机", "厂商", "拍摄时间", "镜头", "光圈", "曝光时间（秒）", "ISO", "焦距（mm）"]
+        let fileRows = metadata.filter { !captureFields.contains($0.0) }
+        let captureRows = metadata.filter { captureFields.contains($0.0) }
+        inspector.add(inspectorSection("图像", views: fileRows.map { inspectorRow($0.0 == "尺寸" ? "原始尺寸" : $0.0, value: $0.1) }))
+        if !captureRows.isEmpty {
+            inspector.add(inspectorSeparator())
+            inspector.add(inspectorSection("拍摄信息", views: captureRows.map { inspectorRow($0.0, value: $0.1) }))
+        }
+        let path = label(asset.url.deletingLastPathComponent().path, size: 11, color: .secondaryLabelColor)
+        path.isSelectable = true; path.toolTip = path.stringValue
+        inspector.add(path)
+        for (title, help, action, enabled) in [
+            ("Finder", "在 Finder 中显示原文件", #selector(reveal(_:)), true),
+            ("识别文字", "识别图片中的文字", #selector(recognizeText(_:)), displayedCG != nil),
+            ("取色", "取色并复制 HEX 色号", #selector(pickColor(_:)), !samplingColor)
+        ] {
+            let button = NSButton(title: title, target: self, action: action)
+            button.bezelStyle = .rounded; button.toolTip = help; button.setAccessibilityLabel(help); button.isEnabled = enabled
+            inspector.footer.addArrangedSubview(button)
+        }
+        inspector.footer.distribution = .fillEqually
     }
-    @objc func closeInspector(_ sender: Any?) { inspectorPanel?.orderOut(nil) }
+
+    private func buildImageAdjustments(_ asset: ImageAsset) {
+        let transforms = NSSegmentedControl(labels: ["左转", "右转", "镜像"], trackingMode: .momentary, target: self, action: #selector(transformImage(_:)))
+        transforms.segmentStyle = .rounded
+        for (index, symbol) in ["rotate.left", "rotate.right", "arrow.left.and.right.righttriangle.left.righttriangle.right"].enumerated() {
+            transforms.setImage(NSImage(systemSymbolName: symbol, accessibilityDescription: nil), forSegment: index)
+            transforms.setToolTip(["向左旋转 90°", "向右旋转 90°", "水平镜像"][index], forSegment: index)
+        }
+        inspector.add(transforms)
+        let popup = NSPopUpButton()
+        popup.addItems(withTitles: ImageEdits.filters.map(\.0))
+        popup.selectItem(at: ImageEdits.filters.firstIndex { $0.1 == edits.filter } ?? 0)
+        popup.target = self; popup.action = #selector(filterChanged(_:)); popup.setAccessibilityLabel("照片滤镜")
+        inspector.add(inspectorSection("滤镜", views: [popup]))
+        let values: [(String, String, Double, Double, Double)] = [
+            ("brightness", "亮度", edits.brightness, -1, 1), ("contrast", "对比度", edits.contrast, 0, 2),
+            ("saturation", "饱和度", edits.saturation, 0, 2), ("exposure", "曝光", edits.exposure, -2, 2)
+        ]
+        var rows: [NSView] = []
+        for (key, title, value, minimum, maximum) in values {
+            let number = label(String(format: "%.2f", value), size: 11, color: .secondaryLabelColor)
+            number.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+            number.alignment = .right; number.widthAnchor.constraint(equalToConstant: 42).isActive = true
+            sliderLabels[key] = number
+            let slider = NSSlider(value: value, minValue: minimum, maxValue: maximum, target: self, action: #selector(sliderChanged(_:)))
+            slider.identifier = NSUserInterfaceItemIdentifier(key); slider.isContinuous = true; slider.setAccessibilityLabel(title)
+            let caption = label(title, size: 12)
+            caption.widthAnchor.constraint(equalToConstant: 42).isActive = true
+            let row = NSStackView(views: [caption, slider, number])
+            row.spacing = 10; row.alignment = .centerY
+            rows.append(row)
+        }
+        inspector.add(inspectorSection("色调", views: rows))
+        let note = label(asset.frameCount > 1 ? "动画使用首帧调整；导出会另存为图片。" : "调整用于预览，导出会另存为图片。", size: 11, color: .secondaryLabelColor)
+        note.maximumNumberOfLines = 2; note.lineBreakMode = .byWordWrapping
+        inspector.add(note)
+        let reset = NSButton(title: "重置", target: self, action: #selector(resetEdits(_:)))
+        let export = NSButton(title: "导出图片…", target: self, action: #selector(exportImage(_:)))
+        [reset, export].forEach { $0.bezelStyle = .rounded }
+        inspector.footer.distribution = .fill
+        inspector.footer.addArrangedSubview(reset)
+        inspector.footer.addArrangedSubview(NSView())
+        inspector.footer.addArrangedSubview(export)
+    }
+
+    func layoutInspector() {
+        inspector.layoutSubtreeIfNeeded()
+        guard let panel = inspectorPanel else { return }
+        let area = panel.screen?.visibleFrame ?? screenArea
+        let height = min(inspector.preferredHeight, max(220, area.height - 60))
+        let top = panel.frame.maxY
+        panel.setContentSize(NSSize(width: 320, height: height))
+        panel.setFrameOrigin(NSPoint(
+            x: max(area.minX, min(panel.frame.minX, area.maxX - panel.frame.width)),
+            y: max(area.minY, min(top - panel.frame.height, area.maxY - panel.frame.height))
+        ))
+    }
+
+    @objc func transformImage(_ sender: NSSegmentedControl) {
+        switch sender.selectedSegment {
+        case 0: rotateLeft(sender)
+        case 1: rotateRight(sender)
+        default: flip(sender)
+        }
+    }
 }

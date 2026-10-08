@@ -27,13 +27,19 @@ extension ViewerController {
         let wasSame = inspectorMode == mode
         inspectorMode = mode; rebuildInspector()
         if !wasSame, let panel = inspectorPanel, panel.isVisible { panel.title = mode.title; return }
-        toggleUtilityPanel(inspector, title: mode.title, panel: &inspectorPanel, size: NSSize(width: 280, height: 600))
+        toggleUtilityPanel(inspector, title: mode.title, panel: &inspectorPanel, size: NSSize(width: 320, height: min(inspector.preferredHeight, max(220, screenArea.height - 60))))
+        layoutInspector()
     }
     func toggleUtilityPanel(_ view: NSView, title: String, panel: inout NSPanel?, size: NSSize) {
-        if let existing = panel, existing.isVisible { existing.orderOut(nil); return }
+        if let existing = panel, existing.isVisible {
+            existing.orderOut(nil)
+            window?.makeKeyAndOrderFront(nil)
+            return
+        }
         if panel == nil {
             let utility = ViewerToolPanel(contentRect: NSRect(origin: .zero, size: size), styleMask: [.titled, .closable, .utilityWindow], backing: .buffered, defer: false)
             utility.isReleasedWhenClosed = false; utility.hidesOnDeactivate = true
+            utility.becomesKeyOnlyIfNeeded = true
             utility.isFloatingPanel = true; utility.level = .floating
             utility.owner = self
             utility.contentView = view
@@ -45,7 +51,10 @@ extension ViewerController {
         let area = screenArea, frame = window?.frame ?? area
         let x = frame.maxX + 8 + size.width <= area.maxX ? frame.maxX + 8 : max(area.minX, frame.minX - size.width - 8)
         panel.setFrameOrigin(NSPoint(x: x, y: min(area.maxY - panel.frame.height, max(area.minY, frame.maxY - panel.frame.height))))
-        panel.makeKeyAndOrderFront(nil)
+        // Keyboard users can immediately tab through the tool. Mouse-opened
+        // inspectors leave the main image active until an editable control needs focus.
+        if NSApp.currentEvent?.type == .keyDown { panel.makeKeyAndOrderFront(nil) }
+        else { panel.orderFront(nil) }
     }
     @objc func editTags(_ sender: Any?) {
         guard gallery.current != nil else { return }

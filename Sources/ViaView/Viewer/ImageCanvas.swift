@@ -3,11 +3,15 @@ import ViewerCore
 
 final class CenteredClipView: NSClipView {
     override func constrainBoundsRect(_ proposed: NSRect) -> NSRect {
-        var result = super.constrainBoundsRect(proposed)
-        if let documentView {
-            if documentView.frame.width < result.width { result.origin.x = (documentView.frame.width - result.width) / 2 }
-            if documentView.frame.height < result.height { result.origin.y = (documentView.frame.height - result.height) / 2 }
-        }
+        guard let documentView else { return super.constrainBoundsRect(proposed) }
+        // Keep the image's real frame as the boundary. Title-bar insets and
+        // rubber-band allowances must not become part of the image coordinates.
+        var result = proposed
+        let image = documentView.frame
+        result.origin.x = image.width <= result.width ? image.midX - result.width / 2
+            : min(image.maxX - result.width, max(image.minX, proposed.minX))
+        result.origin.y = image.height <= result.height ? image.midY - result.height / 2
+            : min(image.maxY - result.height, max(image.minY, proposed.minY))
         return result
     }
 }

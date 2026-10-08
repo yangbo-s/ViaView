@@ -15,13 +15,17 @@ extension ViewerController {
         }
         fileList.onSort = { [weak self] sort, descending in self?.sort = sort; self?.descending = descending; self?.reorderGallery() }
         tagsController.onError = { [weak self] in self?.showError($0) }
-        scroll.contentView = CenteredClipView(); scroll.hasVerticalScroller = false; scroll.hasHorizontalScroller = false
+        scroll.contentView = CenteredClipView()
+        scroll.contentView.automaticallyAdjustsContentInsets = false
+        scroll.contentView.contentInsets = .init()
+        scroll.horizontalScrollElasticity = .none; scroll.verticalScrollElasticity = .none
+        scroll.hasVerticalScroller = false; scroll.hasHorizontalScroller = false
         scroll.autohidesScrollers = true; scroll.drawsBackground = false; scroll.allowsMagnification = true
         scroll.automaticallyAdjustsContentInsets = false; scroll.contentInsets = .init(); scroll.scrollerStyle = .overlay
         scroll.minMagnification = 0.001; scroll.maxMagnification = 32
         canvas.imageScaling = .scaleAxesIndependently; canvas.animates = true; canvas.clipsToBounds = true; canvas.setAccessibilityLabel("图片画布")
         scroll.documentView = canvas; pin(scroll, to: stage)
-        empty.orientation = .vertical; empty.spacing = 14; empty.alignment = .centerX
+        empty.orientation = .vertical; empty.spacing = 14; empty.alignment = .centerX; empty.detachesHiddenViews = true
         let icon = NSImageView(image: NSImage(systemSymbolName: "photo.on.rectangle", accessibilityDescription: nil) ?? NSImage())
         icon.contentTintColor = .secondaryLabelColor; icon.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([icon.widthAnchor.constraint(equalToConstant: 48), icon.heightAnchor.constraint(equalToConstant: 42)])
@@ -30,7 +34,7 @@ extension ViewerController {
         emptyDetail.maximumNumberOfLines = 3; emptyDetail.lineBreakMode = .byWordWrapping; emptyDetail.alignment = .center
         empty.translatesAutoresizingMaskIntoConstraints = false; stage.addSubview(empty)
         NSLayoutConstraint.activate([empty.centerXAnchor.constraint(equalTo: stage.centerXAnchor), empty.centerYAnchor.constraint(equalTo: stage.centerYAnchor), empty.widthAnchor.constraint(lessThanOrEqualTo: stage.widthAnchor, constant: -64)])
-        progress.style = .spinning; progress.controlSize = .small; progress.isDisplayedWhenStopped = false
+        progress.style = .spinning; progress.controlSize = .small; progress.isDisplayedWhenStopped = false; progress.isHidden = true
         empty.addArrangedSubview(progress)
         pin(glassLayer, to: stage)
         for chrome in [topChrome, bottomChrome] { chrome.translatesAutoresizingMaskIntoConstraints = false; glassLayer.content.addSubview(chrome) }
@@ -72,9 +76,13 @@ extension ViewerController {
         colorFeedback.translatesAutoresizingMaskIntoConstraints = false; stage.addSubview(colorFeedback)
         NSLayoutConstraint.activate([colorFeedback.centerXAnchor.constraint(equalTo: stage.centerXAnchor), colorFeedback.bottomAnchor.constraint(equalTo: stage.bottomAnchor, constant: -88), colorFeedback.widthAnchor.constraint(equalToConstant: 164), colorFeedback.heightAnchor.constraint(equalToConstant: 30)])
     }
-    func refreshAppearance() {
-        let dark = UserDefaults.standard.bool(forKey: "darkCanvas")
-        stage.wantsLayer = true; stage.layer?.backgroundColor = (dark ? NSColor(white: 0.10, alpha: 1) : NSColor(white: 0.93, alpha: 1)).cgColor
+    func refreshAppearance(fullScreen override: Bool? = nil) {
+        let fullScreen = override ?? (window?.styleMask.contains(.fullScreen) == true)
+        let dark = fullScreen || UserDefaults.standard.bool(forKey: "darkCanvas")
+        let background = fullScreen ? NSColor.black : NSColor(white: dark ? 0.10 : 0.93, alpha: 1)
+        stage.wantsLayer = true; stage.layer?.backgroundColor = background.cgColor
+        window?.backgroundColor = background
         stage.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        window?.appearance = stage.appearance
     }
 }

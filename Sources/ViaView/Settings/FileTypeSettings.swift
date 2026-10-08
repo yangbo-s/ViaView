@@ -14,13 +14,15 @@ struct FileTypeSettings: View {
                     HStack {
                         Text(ext.uppercased()).frame(width: 58, alignment: .leading)
                         Text(".\(ext)").foregroundStyle(.secondary).frame(width: 46, alignment: .leading)
-                        Spacer()
                         Text(defaults[ext] ?? "未设置").foregroundStyle(.secondary).lineLimit(1)
-                        if defaults[ext] == "ViaView" {
-                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).accessibilityLabel("已设为 ViaView")
-                        } else {
-                            Button("设为 ViaView") { setDefault(ext) }.disabled(busy != nil)
-                        }
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        Group {
+                            if defaults[ext] == "ViaView" {
+                                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).accessibilityLabel("已设为 ViaView")
+                            } else {
+                                Button("设为 ViaView") { setDefault(ext) }.disabled(busy != nil)
+                            }
+                        }.frame(width: 104)
                     }
                 }
             } header: { Text("默认看图应用") } footer: {

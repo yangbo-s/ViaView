@@ -26,7 +26,10 @@ extension ViewerController {
     }
     func applyZoom(_ scale: CGFloat, centerImage: Bool = false) {
         guard let window, let document = scroll.documentView, let geometry = viewportGeometry else { return }
-        let oldCenter = NSPoint(x: scroll.contentView.bounds.midX, y: scroll.contentView.bounds.midY)
+        root.layoutSubtreeIfNeeded()
+        let clip = scroll.contentView
+        let visible = document.convert(clip.bounds, from: clip)
+        let oldCenter = NSPoint(x: visible.midX, y: visible.midY)
         applyingViewport = true
         CATransaction.begin(); CATransaction.setDisableActions(true)
         if !window.styleMask.contains(.fullScreen), !transitioningFullScreen {
@@ -43,9 +46,14 @@ extension ViewerController {
             }
         }
         scroll.magnification = min(32, max(0.001, scale))
-        let center = centerImage ? NSPoint(x: document.frame.width / 2, y: document.frame.height / 2) : oldCenter
-        scroll.contentView.scroll(to: NSPoint(x: center.x - scroll.contentView.bounds.width / 2, y: center.y - scroll.contentView.bounds.height / 2))
-        scroll.reflectScrolledClipView(scroll.contentView)
+        scroll.tile()
+        root.layoutSubtreeIfNeeded()
+        var center = centerImage ? NSPoint(x: document.bounds.midX, y: document.bounds.midY) : oldCenter
+        // A complete image always recenters, including fractional point sizes.
+        let tolerance = 1 / scroll.magnification
+        if document.bounds.width <= clip.bounds.width + tolerance { center.x = document.bounds.midX }
+        if document.bounds.height <= clip.bounds.height + tolerance { center.y = document.bounds.midY }
+        centerViewport(on: center)
         CATransaction.commit()
         applyingViewport = false
         if chromeVisible || titleUsesCanvas != (scale < geometry.minimumScale) { updateTitleContrast() }
@@ -54,7 +62,7 @@ extension ViewerController {
     func resetEmptyWindow() {
         guard let window, !window.styleMask.contains(.fullScreen) else { return }
         applyingViewport = true
-        window.contentAspectRatio = .zero
+        window.contentResizeIncrements = NSSize(width: 1, height: 1)
         window.contentMinSize = NSSize(width: 480, height: 320)
         window.contentMaxSize = screenArea.size
         let old = window.frame
@@ -64,21 +72,27 @@ extension ViewerController {
     }
     func centerDocument() {
         guard let doc = scroll.documentView else { return }
-        scroll.contentView.scroll(to: NSPoint(x: (doc.frame.width - scroll.contentView.bounds.width) / 2, y: (doc.frame.height - scroll.contentView.bounds.height) / 2))
-        scroll.reflectScrolledClipView(scroll.contentView)
+        centerViewport(on: NSPoint(x: doc.bounds.midX, y: doc.bounds.midY))
+    }
+    func centerViewport(on documentPoint: NSPoint) {
+        guard let document = scroll.documentView else { return }
+        let clip = scroll.contentView
+        let point = clip.convert(documentPoint, from: document)
+        var bounds = clip.bounds
+        bounds.origin = NSPoint(x: point.x - bounds.width / 2, y: point.y - bounds.height / 2)
+        clip.scroll(to: clip.constrainBoundsRect(bounds).origin)
+        scroll.reflectScrolledClipView(clip)
     }
     func layoutChrome() {
         let width = stage.bounds.width
         bottomFullChrome.isHidden = width < 470
         bottomCompactChrome.isHidden = width >= 470
-        if let button = windowButtons.first, button.window != nil, window?.styleMask.contains(.fullScreen) != true {
-            let center = stage.convert(NSPoint(x: button.bounds.midX, y: button.bounds.midY), from: button)
-            topChromeTop?.constant = max(0, stage.bounds.height - center.y - 22)
-        }
+        alignTopChromeWithWindowControls()
         // Collapse complete groups, preserving a single centered filename row.
         for (group, threshold) in zip(toolGroups, [480.0, 580, 750, 810]) {
-            group.isHidden = width < threshold
+            group.isHidden = asset == nil || width < threshold
         }
+        compactTools?.isHidden = asset == nil || width < 400 || width >= 480
         nameLabel.font = .systemFont(ofSize: 14, weight: .semibold)
         for key in ["out", "in", "fit"] { buttons[key]?.isHidden = width < 470 }
         zoomLabel.isHidden = width < 470
@@ -86,6 +100,17 @@ extension ViewerController {
         // The compact transport contains only the two navigation buttons.
         countLabel.isHidden = width < 470
         if width < 170 { topChrome.isHidden = true; bottomChrome.isHidden = true }
+    }
+    func alignTopChromeWithWindowControls() {
+        var inset: CGFloat = 8
+        if window?.styleMask.contains(.fullScreen) != true,
+           let button = windowButtons.first, button.window != nil, stage.bounds.height > 0 {
+            let center = stage.convert(NSPoint(x: button.bounds.midX, y: button.bounds.midY), from: button)
+            inset = max(0, stage.bounds.height - center.y - 22)
+        }
+        if let constraint = topChromeTop, abs(constraint.constant - inset) > 0.01 {
+            constraint.constant = inset
+        }
     }
     @objc func fit(_ sender: Any?) {
         guard let geometry = viewportGeometry else { return }
@@ -105,19 +130,69 @@ extension ViewerController {
         fitting = false
         zoomDriver.aim(zoomDriver.target * multiplier, in: stage)
     }
-    @objc func fullscreen(_ sender: Any?) { zoomDriver.reset(scroll.magnification); window?.toggleFullScreen(sender) }
+    @objc func fullscreen(_ sender: Any?) {
+        guard !transitioningFullScreen else { return }
+        zoomDriver.reset(scroll.magnification)
+        window?.toggleFullScreen(sender)
+    }
+    func handleFullScreenExit(_ event: NSEvent) -> Bool {
+        guard let window, window.styleMask.contains(.fullScreen), window.attachedSheet == nil,
+              !(window.firstResponder is NSTextView),
+              isFullScreenExitKey(event) else { return false }
+        if !event.isARepeat, !transitioningFullScreen { fullscreen(nil) }
+        return true
+    }
     func windowDidResize(_ notification: Notification) {
         layoutChrome()
         guard !applyingViewport, !transitioningFullScreen, let doc = scroll.documentView, asset != nil else { return }
         let scale = min(scroll.contentSize.width / max(1, doc.frame.width), scroll.contentSize.height / max(1, doc.frame.height))
         zoomDriver.reset(scale); scroll.magnification = scale; centerDocument(); updateZoomLabel(); refreshChrome()
     }
-    func windowWillEnterFullScreen(_ notification: Notification) { transitioningFullScreen = true; zoomDriver.reset(scroll.magnification) }
-    func windowWillExitFullScreen(_ notification: Notification) { transitioningFullScreen = true; zoomDriver.reset(scroll.magnification) }
-    func windowDidEnterFullScreen(_ notification: Notification) { transitioningFullScreen = false; fit(nil) }
-    func windowDidExitFullScreen(_ notification: Notification) { transitioningFullScreen = false; prepareImageWindow() }
+    func windowWillEnterFullScreen(_ notification: Notification) {
+        transitioningFullScreen = true
+        zoomDriver.reset(scroll.magnification)
+        // Resize increments clear an existing aspect constraint without leaving a zero ratio
+        // for AppKit to apply while restoring the window after full screen.
+        window?.contentResizeIncrements = NSSize(width: 1, height: 1)
+        window?.contentMaxSize = NSSize(width: 100_000, height: 100_000)
+        window?.toolbar?.isVisible = false
+        refreshAppearance(fullScreen: true)
+    }
+    func windowWillExitFullScreen(_ notification: Notification) {
+        transitioningFullScreen = true
+        zoomDriver.reset(scroll.magnification)
+    }
+    func windowDidEnterFullScreen(_ notification: Notification) {
+        refreshAppearance()
+        root.layoutSubtreeIfNeeded(); scroll.tile()
+        transitioningFullScreen = false
+        fit(nil)
+    }
+    func windowDidExitFullScreen(_ notification: Notification) {
+        restoreWindowedViewport()
+    }
+    func windowDidFailToEnterFullScreen(_ window: NSWindow) {
+        restoreWindowedViewport()
+    }
+    func windowDidFailToExitFullScreen(_ window: NSWindow) {
+        transitioningFullScreen = false
+        fit(nil)
+    }
+    private func restoreWindowedViewport() {
+        refreshAppearance()
+        window?.toolbar?.isVisible = true
+        root.layoutSubtreeIfNeeded(); scroll.tile()
+        transitioningFullScreen = false
+        if asset == nil { resetEmptyWindow() }
+        else { prepareImageWindow() }
+    }
     func windowDidChangeScreen(_ notification: Notification) {
         guard !applyingViewport, !transitioningFullScreen, asset != nil else { return }
         zoomDriver.reset(scroll.magnification); updateWindowLimits(); applyZoom(scroll.magnification)
     }
+}
+
+func isFullScreenExitKey(_ event: NSEvent) -> Bool {
+    event.type == .keyDown && [53, 51, 117].contains(event.keyCode)
+        && event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty
 }

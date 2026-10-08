@@ -8,14 +8,13 @@ extension ViewerController {
     @objc func filterChanged(_ sender: NSPopUpButton) { edits.filter = ImageEdits.filters[sender.indexOfSelectedItem].1; applyEdits() }
     @objc func sliderChanged(_ sender: NSSlider) {
         guard let key = sender.identifier?.rawValue else { return }
-        let title: String
         switch key {
-        case "brightness": edits.brightness = sender.doubleValue; title = "亮度"
-        case "contrast": edits.contrast = sender.doubleValue; title = "对比度"
-        case "saturation": edits.saturation = sender.doubleValue; title = "饱和度"
-        default: edits.exposure = sender.doubleValue; title = "曝光"
+        case "brightness": edits.brightness = sender.doubleValue
+        case "contrast": edits.contrast = sender.doubleValue
+        case "saturation": edits.saturation = sender.doubleValue
+        default: edits.exposure = sender.doubleValue
         }
-        sliderLabels[key]?.stringValue = String(format: "%@    %.2f", title, sender.doubleValue); applyEdits()
+        sliderLabels[key]?.stringValue = String(format: "%.2f", sender.doubleValue); applyEdits()
     }
     @objc func resetEdits(_ sender: Any?) { edits = ImageEdits(); applyEdits(); rebuildInspector() }
     func applyEdits() {

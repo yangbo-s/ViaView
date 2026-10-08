@@ -2,7 +2,7 @@
 
 轻巧的 macOS 原生看图应用。让图片占据窗口，把操作留在需要时。
 
-[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.0/ViaView-0.1.0-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.0/ViaView-0.1.0-arm64.zip) · [更新记录](CHANGELOG.md)
+[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.1/ViaView-0.1.1-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.1/ViaView-0.1.1-arm64.zip) · [更新记录](CHANGELOG.md)
 
 ## 安装
 
@@ -41,6 +41,7 @@
 | `⌘⇧T` | 识别文字 |
 | `⌘⇧S` | 导出图片 |
 | 空格 | 播放 / 暂停幻灯片 |
+| `Esc` / `Delete` | 退出全屏 |
 | `⌘,` | 设置 |
 
 更多快捷键可在“设置 → 快捷键”中搜索。
@@ -60,6 +61,7 @@ open dist/ViaView.app
 
 ```sh
 zsh scripts/check.sh
+zsh scripts/check-appkit.sh
 python3 scripts/audit.py
 zsh scripts/package.sh
 ```

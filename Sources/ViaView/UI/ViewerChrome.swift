@@ -6,6 +6,7 @@ extension ViewerController {
         scroll.isHidden = true; web?.isHidden = true
         if !loading, asset == nil { resetEmptyWindow() }
         empty.isHidden = false; emptyTitle.stringValue = title; emptyDetail.stringValue = detail
+        progress.isHidden = !loading
         loading ? progress.startAnimation(nil) : progress.stopAnimation(nil)
     }
     func updateUI() {
@@ -44,11 +45,11 @@ extension ViewerController {
         windowButtons.forEach { $0.isHidden = !visible || !available }
         guard chromeVisible != visible else {
             topChrome.isHidden = !visible || !available
-            bottomChrome.isHidden = !visible || stage.bounds.height < 180 || stage.bounds.width < 170
+            bottomChrome.isHidden = asset == nil || !visible || stage.bounds.height < 180 || stage.bounds.width < 170
             return
         }
         chromeVisible = visible; chromeGeneration += 1; let generation = chromeGeneration
-        if visible { topChrome.isHidden = !available; bottomChrome.isHidden = stage.bounds.height < 180 || stage.bounds.width < 170 }
+        if visible { topChrome.isHidden = !available; bottomChrome.isHidden = asset == nil || stage.bounds.height < 180 || stage.bounds.width < 170 }
         NSAnimationContext.runAnimationGroup { context in
             context.duration = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : 0.12
             topChrome.animator().alphaValue = visible ? 1 : 0; bottomChrome.animator().alphaValue = visible ? 1 : 0

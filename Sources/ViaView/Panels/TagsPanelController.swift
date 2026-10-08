@@ -21,6 +21,15 @@ final class TagsPanelController: NSViewController {
         scroll.translatesAutoresizingMaskIntoConstraints = false; view.addSubview(scroll)
         NSLayoutConstraint.activate([scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor), scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor), scroll.topAnchor.constraint(equalTo: view.topAnchor), scroll.bottomAnchor.constraint(equalTo: view.bottomAnchor)])
         stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 10; document.addSubview(stack)
+        document.translatesAutoresizingMaskIntoConstraints = false
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            document.widthAnchor.constraint(equalTo: scroll.contentView.widthAnchor),
+            stack.leadingAnchor.constraint(equalTo: document.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: document.trailingAnchor, constant: -16),
+            stack.topAnchor.constraint(equalTo: document.topAnchor, constant: 16),
+            stack.bottomAnchor.constraint(equalTo: document.bottomAnchor, constant: -16)
+        ])
         entry.placeholderString = "添加标签…"; entry.bezelStyle = .roundedBezel; entry.target = self; entry.action = #selector(addTag); entry.setAccessibilityLabel("新标签名称")
         activation = NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
             if self?.view.window?.isVisible == true { self?.refresh() }
@@ -45,7 +54,11 @@ final class TagsPanelController: NSViewController {
     func refresh() {
         guard isViewLoaded else { return }
         for view in stack.arrangedSubviews { stack.removeArrangedSubview(view); view.removeFromSuperview() }
-        func add(_ view: NSView) { view.translatesAutoresizingMaskIntoConstraints = false; view.widthAnchor.constraint(equalToConstant: 248).isActive = true; stack.addArrangedSubview(view) }
+        func add(_ view: NSView) {
+            stack.addArrangedSubview(view)
+            view.translatesAutoresizingMaskIntoConstraints = false
+            view.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
+        }
         let name = label(url?.lastPathComponent ?? "尚未打开图片", size: 12, weight: .semibold); name.toolTip = url?.lastPathComponent; add(name)
         guard let url else { add(label("打开图片后可编辑 Finder 标签。", size: 12, color: .secondaryLabelColor)); layoutContent(); return }
         do { tags = try FinderTags.read(url) }
@@ -75,7 +88,7 @@ final class TagsPanelController: NSViewController {
         }
         layoutContent()
     }
-    private func layoutContent() { let height = stack.fittingSize.height; stack.frame = NSRect(x: 16, y: 16, width: 248, height: height); document.frame = NSRect(x: 0, y: 0, width: 280, height: height + 32) }
+    private func layoutContent() { view.layoutSubtreeIfNeeded() }
     @objc private func addTag() {
         guard let url else { return }
         do {
