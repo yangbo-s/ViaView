@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">ViaView — Lighthouse</title>
+  <desc id="desc">A coral-roofed white lighthouse above turquoise water. Rounded geometric light beams and an open white wave create a light, friendly app icon.</desc>
+  <rect id="background" x="20" y="20" width="472" height="472" rx="106" fill="#FFFDF8"/>
+  <g id="lighthouse-mark" transform="translate(0 -2)">
+    <path id="sea" d="M96 270C96 241 119 218 148 218H364C393 218 416 241 416 270V348C411 392 379 416 330 416H182C138 416 110 398 96 363Z" fill="#36C5CF"/>
+    <rect id="left-beam" x="112" y="178" width="72" height="24" rx="12" fill="#36C5CF"/>
+    <rect id="right-beam" x="328" y="178" width="72" height="24" rx="12" fill="#FFCB68"/>
+    <path id="tower" d="M233 224H279L299 361H213Z" fill="#FFFDF8"/>
+    <rect id="lantern" x="220" y="158" width="72" height="68" rx="18" fill="#153F59"/>
+    <rect id="light" x="246" y="174" width="20" height="32" rx="10" fill="#FFCB68"/>
+    <path id="roof" d="M207 143C213 116 232 100 256 100C280 100 299 116 305 143C307 150 303 154 296 154H216C209 154 205 150 207 143Z" fill="#ED626F"/>
+    <rect id="gallery" x="204" y="214" width="104" height="20" rx="10" fill="#153F59"/>
+    <rect id="window" x="247" y="268" width="18" height="28" rx="9" fill="#153F59"/>
+    <path id="wave-crest" d="M96 333C144 305 176 342 215 344C254 346 290 310 333 324C367 335 385 349 416 329V348C366 380 339 347 302 346C264 345 230 382 187 367C151 354 135 343 96 363Z" fill="#FFFDF8"/>
+    <path id="wave" d="M96 363C135 343 151 354 187 367C230 382 264 345 302 346C339 347 366 380 416 348C411 392 379 416 330 416H182C138 416 110 398 96 363Z" fill="#089EBD"/>
+  </g>
+</svg>

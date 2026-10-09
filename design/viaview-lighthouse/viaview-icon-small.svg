@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">ViaView — Lighthouse, small size</title>
+  <desc id="desc">An optically simplified lighthouse app icon for 16–24 pixel use, with a larger light, wider wave opening, and no tower window.</desc>
+  <rect id="background" x="1" y="1" width="30" height="30" rx="7" fill="#FFFDF8"/>
+  <path id="sea" d="M6 17C6 15.1 7.4 13.5 9.3 13.5H22.7C24.6 13.5 26 15.1 26 17V22.4C25.3 24.8 23.5 26 20.6 26H11.4C8.7 26 6.8 25.1 6 23.2Z" fill="#36C5CF"/>
+  <rect id="left-beam" x="6.5" y="10.5" width="4.5" height="2" rx="1" fill="#36C5CF"/>
+  <rect id="right-beam" x="21" y="10.5" width="4.5" height="2" rx="1" fill="#FFCB68"/>
+  <path id="tower" d="M14.25 14H17.75L19 22.6H13Z" fill="#FFFDF8"/>
+  <rect id="lantern" x="13.5" y="9.75" width="5" height="4.5" rx="1.2" fill="#153F59"/>
+  <rect id="light" x="15" y="10.5" width="2" height="2.5" rx="1" fill="#FFCB68"/>
+  <path id="roof" d="M12.75 8.7C13.15 7.05 14.4 6 16 6C17.6 6 18.85 7.05 19.25 8.7C19.35 9.1 19.1 9.4 18.65 9.4H13.35C12.9 9.4 12.65 9.1 12.75 8.7Z" fill="#ED626F"/>
+  <rect id="gallery" x="12.5" y="13.5" width="7" height="1.5" rx="0.75" fill="#153F59"/>
+  <path id="wave-crest" d="M6 20.75C9 19 11 21.3 13.5 21.5C16 21.65 18.1 19.3 20.9 20.1C23 20.8 24.1 21.7 26 20.5V22.4C22.9 24.3 21.2 22.1 18.9 22.1C16.5 22.1 14.4 24.4 11.7 23.5C9.4 22.7 8.5 22 6 23.2Z" fill="#FFFDF8"/>
+  <path id="wave" d="M6 23.2C8.5 22 9.4 22.7 11.7 23.5C14.4 24.4 16.5 22.1 18.9 22.1C21.2 22.1 22.9 24.3 26 22.4C25.3 24.8 23.5 26 20.6 26H11.4C8.7 26 6.8 25.1 6 23.2Z" fill="#089EBD"/>
+</svg>
