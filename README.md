@@ -2,7 +2,7 @@
 
 轻巧的 macOS 原生看图应用。让图片占据窗口，把操作留在需要时。
 
-[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.1/ViaView-0.1.1-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.1/ViaView-0.1.1-arm64.zip) · [更新记录](CHANGELOG.md)
+[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.2/ViaView-0.1.2-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.2/ViaView-0.1.2-arm64.zip) · [更新记录](CHANGELOG.md)
 
 ## 安装
 
