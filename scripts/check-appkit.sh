@@ -13,5 +13,5 @@ done
 xcrun swiftc -swift-version 5 -sdk "$SDK_PATH" -target "$(uname -m)-apple-macosx14.0" \
   -I "$BUILD_ROOT/release/Modules" "${APP_SOURCES[@]}" \
   "$BUILD_ROOT/release/ViaView.build/DerivedSources/resource_bundle_accessor.swift" \
-  "${CORE_OBJECTS[@]}" "$PROJECT_ROOT/Tests/AppKitChecks.swift" -o "$BUILD_ROOT/AppKitChecks"
+  "${CORE_OBJECTS[@]}" "$PROJECT_ROOT"/Tests/*.swift -o "$BUILD_ROOT/AppKitChecks"
 "$BUILD_ROOT/AppKitChecks"

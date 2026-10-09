@@ -83,9 +83,14 @@ func dragImageDocument(in candidate: NSScrollView?, with event: NSEvent, selecti
 final class WorkspaceView: NSView {
     var onDrop: (([URL]) -> Void)?
     var onPointer: ((NSPoint?) -> Void)?
+    var onAppearanceChange: (() -> Void)?
     private var tracking: NSTrackingArea?
     override init(frame: NSRect) { super.init(frame: frame); registerForDraggedTypes([.fileURL]) }
     required init?(coder: NSCoder) { fatalError() }
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        onAppearanceChange?()
+    }
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation { .copy }
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         guard let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty else { return false }

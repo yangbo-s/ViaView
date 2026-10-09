@@ -1,52 +1,50 @@
 import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct FileTypeSettings: View {
-    private let formats = ["png", "jpg", "gif", "tiff", "bmp", "webp", "heic", "heif", "avif", "ico", "psd", "tga", "svg", "pdf", "dng", "cr2", "nef", "arw"]
-    @State private var defaults: [String: String] = [:]
-    @State private var busy: String?
-    @State private var message = ""
+    @StateObject private var model = FileTypeSettingsModel()
     var body: some View {
         Form {
             Section {
-                ForEach(formats, id: \.self) { ext in
+                HStack {
+                    Text("\(model.configuredCount) / \(model.formats.count) 种文件类型已使用 ViaView")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button(model.allConfigured ? "已全部设为 ViaView" : "全部设为 ViaView") { model.setAll() }
+                        .disabled(model.busy != nil || model.allConfigured)
+                }
+                if model.busy != nil {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text(model.progressText).foregroundStyle(.secondary)
+                    }.accessibilityElement(children: .combine)
+                }
+                if !model.message.isEmpty { Text(model.message).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+            } header: { Text("默认看图应用") } footer: {
+                Text("一键设置下列全部类型，自动跳过已设置的项目。macOS 可能逐项要求确认。")
+            }
+            Section {
+                ForEach(model.formats, id: \.self) { ext in
                     HStack {
                         Text(ext.uppercased()).frame(width: 58, alignment: .leading)
                         Text(".\(ext)").foregroundStyle(.secondary).frame(width: 46, alignment: .leading)
-                        Text(defaults[ext] ?? "未设置").foregroundStyle(.secondary).lineLimit(1)
+                        Text(model.associations[ext]?.applicationName ?? "未设置").foregroundStyle(.secondary).lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .trailing)
                         Group {
-                            if defaults[ext] == "ViaView" {
-                                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).accessibilityLabel("已设为 ViaView")
+                            if model.associations[ext]?.isViaView == true {
+                                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).accessibilityLabel("\(ext.uppercased()) 已设为 ViaView")
                             } else {
-                                Button("设为 ViaView") { setDefault(ext) }.disabled(busy != nil)
+                                Button("设为 ViaView") { model.setDefault(ext) }.disabled(model.busy != nil)
+                                    .accessibilityLabel("将 \(ext.uppercased()) 设为使用 ViaView 打开")
                             }
                         }.frame(width: 104)
                     }
                 }
-            } header: { Text("默认看图应用") } footer: {
-                Text("选择后仅修改该类文件的默认打开方式。macOS 可能要求确认；RAW 格式是否可解码取决于系统对相机的支持。")
-            }
-            if !message.isEmpty { Section { Text(message).foregroundStyle(.secondary) } }
-        }
-        .formStyle(.grouped).onAppear { refresh() }
-    }
-    private func refresh() {
-        for ext in formats {
-            if let type = UTType(filenameExtension: ext), let app = NSWorkspace.shared.urlForApplication(toOpen: type) {
-                defaults[ext] = Bundle(url: app)?.bundleIdentifier == Bundle.main.bundleIdentifier ? "ViaView" : (FileManager.default.displayName(atPath: app.path) as NSString).deletingPathExtension
-            } else { defaults[ext] = "未设置" }
-        }
-    }
-    private func setDefault(_ ext: String) {
-        guard let type = UTType(filenameExtension: ext) else { return }
-        busy = ext; message = ""
-        NSWorkspace.shared.setDefaultApplication(at: Bundle.main.bundleURL, toOpen: type) { error in
-            DispatchQueue.main.async {
-                busy = nil; refresh()
-                message = error.map { "未能修改 \(ext.uppercased())：\($0.localizedDescription)" } ?? "\(ext.uppercased()) 已设为使用 ViaView 打开。"
+            } footer: {
+                Text("也可以单独修改某种类型。RAW 格式是否可解码取决于系统对相机的支持。")
             }
         }
+        .formStyle(.grouped).onAppear { model.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in model.refresh() }
     }
 }

@@ -3,15 +3,18 @@ import ViewerCore
 
 extension ViewerController {
     func showMessage(_ title: String, detail: String, loading: Bool) {
+        // Keep the current document on screen while its replacement decodes.
+        if loading, !scroll.isHidden, canvas.image != nil || web != nil { return }
         scroll.isHidden = true; web?.isHidden = true
         if !loading, asset == nil { resetEmptyWindow() }
         empty.isHidden = false; emptyTitle.stringValue = title; emptyDetail.stringValue = detail
         progress.isHidden = !loading
         loading ? progress.startAnimation(nil) : progress.stopAnimation(nil)
+        if !loading { finishWindowPresentation() }
     }
     func updateUI() {
         window?.title = gallery.current?.lastPathComponent ?? "ViaView"; window?.representedURL = gallery.current
-        nameLabel.stringValue = gallery.current?.lastPathComponent ?? "ViaView"
+        nameLabel.stringValue = isLoading ? "正在打开 \(gallery.current?.lastPathComponent ?? "图片…")" : (gallery.current?.lastPathComponent ?? "ViaView")
         countLabel.stringValue = gallery.urls.isEmpty ? "—" : "\(gallery.index + 1) / \(gallery.urls.count)"
         if let asset {
             let w = edits.turns % 2 == 0 ? asset.pixelWidth : asset.pixelHeight, h = edits.turns % 2 == 0 ? asset.pixelHeight : asset.pixelWidth
@@ -21,8 +24,8 @@ extension ViewerController {
         for (key, button) in buttons { button.isEnabled = ["previous", "next", "compactPrevious", "compactNext"].contains(key) ? gallery.urls.count > 1 : (key == "fullscreen" || asset != nil) }
         buttons["rotate"]?.isEnabled = displayedCG != nil
         updateSlideshowButton()
-        fileList.update(urls: gallery.urls, selected: gallery.current, sort: sort, descending: descending)
-        tagsController.setURL(gallery.current)
+        if fileListPanel?.isVisible == true { fileList.update(urls: gallery.urls, selected: gallery.current, sort: sort, descending: descending) }
+        if tagsPanel?.isVisible == true { tagsController.setURL(gallery.current) }
         updateTitleContrast(); updateZoomLabel(); layoutChrome(); refreshChrome()
     }
     func updateZoomLabel() {

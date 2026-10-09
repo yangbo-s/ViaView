@@ -51,7 +51,7 @@ extension ViewerController {
         let view = sender as? NSView ?? topChrome; picker.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
     }
     @objc func printImage(_ sender: Any?) {
-        guard let image = canvas.image else { return }
+        guard displayedCG != nil, let image = canvas.image else { return }
         let view = NSImageView(frame: NSRect(origin: .zero, size: image.size)); view.image = image; view.imageScaling = .scaleProportionallyUpOrDown
         let info = NSPrintInfo.shared.copy() as! NSPrintInfo; info.horizontalPagination = .fit; info.verticalPagination = .fit; info.isHorizontallyCentered = true; info.isVerticallyCentered = true
         NSPrintOperation(view: view, printInfo: info).run()

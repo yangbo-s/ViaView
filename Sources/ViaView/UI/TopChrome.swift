@@ -137,7 +137,7 @@ extension ViewerController {
         // Sample the pixels actually underneath the filename, not the whole photograph.
         // Only a tiny crop of the decoded preview is drawn; hidden chrome does no per-frame work.
         titleUsesCanvas = scroll.magnification < (viewportGeometry?.minimumScale ?? 0)
-        var luminance: Double = UserDefaults.standard.bool(forKey: "darkCanvas") ? 0 : 1
+        var luminance: Double = usesDarkAppearance ? 0 : 1
         var titleRect = nameLabel.bounds
         titleRect.size.width = min(titleRect.width, nameLabel.attributedStringValue.size().width)
         let imageRect = canvas.convert(titleRect, from: nameLabel).intersection(canvas.bounds)
@@ -146,7 +146,7 @@ extension ViewerController {
             var pixels = [UInt8](repeating: 0, count: 8 * 8 * 4)
             pixels.withUnsafeMutableBytes { bytes in
                 if let context = CGContext(data: bytes.baseAddress, width: 8, height: 8, bitsPerComponent: 8, bytesPerRow: 32, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) {
-                    context.setFillColor(stage.effectiveAppearance.name == .darkAqua ? NSColor.black.cgColor : NSColor.white.cgColor)
+                    context.setFillColor(usesDarkAppearance ? NSColor.black.cgColor : NSColor.white.cgColor)
                     context.fill(CGRect(x: 0, y: 0, width: 8, height: 8))
                     context.draw(image, in: CGRect(x: 0, y: 0, width: 8, height: 8))
                 }

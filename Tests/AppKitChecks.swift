@@ -5,6 +5,9 @@ import ViewerCore
     static func main() {
         NSApplication.shared.setActivationPolicy(.prohibited)
         AppSettings.register()
+        if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--benchmark" {
+            runOpeningBenchmark(URL(fileURLWithPath: CommandLine.arguments[2])); return
+        }
         var failures = 0
         var checks = 0
         func check(_ condition: Bool, _ name: String) {
@@ -102,6 +105,10 @@ import ViewerCore
         check(abs(tagsDocument.bounds.width - tagsScroll.contentView.bounds.width) < 0.1 && abs(tagsStack.frame.minX - 16) < 0.1 && abs(tagsDocument.bounds.width - tagsStack.frame.maxX - 16) < 0.1, "tags keep equal 16 pt insets with an occupied scrollbar")
         panel.close()
         viewer.window?.close()
+        runLoadingChecks(check)
+        runAsyncLoadingChecks(check)
+        runFileTypeSettingsChecks(check)
+        runThemeSettingsChecks(check)
         print("AppKit: \(checks - failures) passed, \(failures) failed")
         exit(failures == 0 ? 0 : 1)
     }

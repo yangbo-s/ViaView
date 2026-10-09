@@ -9,6 +9,11 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
     var displayedCG: CGImage?
     var edits = ImageEdits()
     var loadSerial = 0
+    let imagePipeline: ImagePipeline
+    let scanFolder: (URL, GallerySort, Bool) throws -> [URL]
+    var isLoading = false
+    var showWhenReady = false
+    var pendingSVG: (browser: WKWebView, asset: ImageAsset)?
     var editSerial = 0
     var fitting = true
     var sort: GallerySort = .name
@@ -58,6 +63,7 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
     let zoomDriver = ZoomDriver()
     var applyingViewport = false
     var transitioningFullScreen = false
+    var usesFullScreenAppearance = false
     var fileListPanel: NSPanel?
     var inspectorPanel: NSPanel?
     var topActions: [NSButton] = []
@@ -71,7 +77,9 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
     var compactTools: GlassChrome?
     let moreButton = toolbarButton(.more, "更多操作", target: nil, action: #selector(showMore(_:)), size: 32)
 
-    init() {
+    init(imagePipeline: ImagePipeline = .shared,
+         scanFolder: @escaping (URL, GallerySort, Bool) throws -> [URL] = { try Gallery.scan($0, sort: $1, descending: $2) }) {
+        self.imagePipeline = imagePipeline; self.scanFolder = scanFolder
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 420), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.title = "ViaView"; window.titleVisibility = .hidden; window.titlebarAppearsTransparent = true
         let nativeToolbar = NSToolbar(identifier: "ViaViewWindowControls")
@@ -82,7 +90,9 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
         window.acceptsMouseMovedEvents = true; window.tabbingMode = .disallowed
         window.autorecalculatesKeyViewLoop = true
         super.init(window: window); window.delegate = self; window.contentView = root
-        buildLayout(); refreshAppearance()
+        buildLayout()
+        stage.onAppearanceChange = { [weak self] in self?.updateCanvasAppearance() }
+        refreshAppearance()
         canvas.onNavigate = { [weak self] in self?.move($0) }
         canvas.onDoubleClick = { [weak self] in guard let self else { return }; self.fitting ? self.actualSize(nil) : self.fit(nil) }
         stage.onDrop = { [weak self] in self?.openURLs($0) }
@@ -90,32 +100,56 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
         scroll.onZoom = { [weak self] in self?.zoom($0) }
         zoomDriver.apply = { [weak self] in self?.applyZoom($0) }
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .mouseMoved, .leftMouseDown, .rightMouseDown, .scrollWheel, .magnify]) { [weak self] event in
-            if let self, event.window === self.window {
-                if event.type == .keyDown {
-                    if self.handleFullScreenExit(event) { return nil }
-                    return event
-                }
-                let point = self.stage.convert(event.locationInWindow, from: nil)
-                let contextClick = event.type == .rightMouseDown || (event.type == .leftMouseDown && event.modifierFlags.contains(.control))
-                if contextClick, self.gallery.current != nil, self.stage.bounds.contains(point), self.glassLayer.hitTest(point) == nil {
-                    self.showImageContextMenu(with: event); return nil
-                } else if event.type == .scrollWheel || event.type == .magnify {
-                    if self.asset?.isSVG == true, self.stage.bounds.contains(point) {
-                        if event.type == .magnify { self.scroll.magnify(with: event) }
-                        else { self.scroll.scrollWheel(with: event) }
-                        return nil
-                    }
-                } else if event.type == .leftMouseDown, self.asset?.isSVG == true,
-                          self.stage.bounds.contains(point), self.glassLayer.hitTest(point) == nil {
-                    dragImageDocument(in: self.scroll, with: event); return nil
-                } else { self.pointer(point) }
-            }
-            return event
+            guard let self else { return event }; return self.routeViewerEvent(event)
         }
         updateUI()
     }
     required init?(coder: NSCoder) { fatalError() }
     deinit { if let eventMonitor { NSEvent.removeMonitor(eventMonitor) }; timer?.invalidate(); zoomDriver.stop() }
+
+    override func showWindow(_ sender: Any?) {
+        if isLoading, window?.isVisible != true { showWhenReady = true; return }
+        super.showWindow(sender)
+    }
+
+    func finishWindowPresentation() {
+        isLoading = false
+        if showWhenReady {
+            showWhenReady = false
+            window?.contentView?.layoutSubtreeIfNeeded()
+            window?.displayIfNeeded()
+            super.showWindow(nil)
+        }
+    }
+
+    func routeViewerEvent(_ event: NSEvent) -> NSEvent? {
+        if event.window === self.window {
+            // Full-size content extends underneath the native titlebar buttons.
+            // They are outside glassLayer, so its hit test alone cannot protect them.
+            if windowButtons.contains(where: { !$0.isHiddenOrHasHiddenAncestor && $0.bounds.contains($0.convert(event.locationInWindow, from: nil)) }) {
+                return event
+            }
+            if event.type == .keyDown {
+                if self.handleFullScreenExit(event) { return nil }
+                return event
+            }
+            let point = self.stage.convert(event.locationInWindow, from: nil)
+            let contextClick = event.type == .rightMouseDown || (event.type == .leftMouseDown && event.modifierFlags.contains(.control))
+            if contextClick, self.gallery.current != nil, self.stage.bounds.contains(point), self.glassLayer.hitTest(point) == nil {
+                self.showImageContextMenu(with: event); return nil
+            } else if event.type == .scrollWheel || event.type == .magnify {
+                if self.asset?.isSVG == true, self.stage.bounds.contains(point) {
+                    if event.type == .magnify { self.scroll.magnify(with: event) }
+                    else { self.scroll.scrollWheel(with: event) }
+                    return nil
+                }
+            } else if event.type == .leftMouseDown, self.asset?.isSVG == true,
+                      self.stage.bounds.contains(point), self.glassLayer.hitTest(point) == nil {
+                dragImageDocument(in: self.scroll, with: event); return nil
+            } else { self.pointer(point) }
+        }
+        return event
+    }
 
     @objc func toggleAnimation(_ sender: Any?) { canvas.animates.toggle() }
     @objc func alwaysOnTop(_ sender: Any?) { window?.level = window?.level == .floating ? .normal : .floating; updateTopActions() }
@@ -141,9 +175,17 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
     func windowWillClose(_ notification: Notification) {
         guard notification.object as? NSWindow === window else { return }
         zoomDriver.stop(); fileListPanel?.close(); inspectorPanel?.close(); tagsPanel?.close()
-        timer?.invalidate(); loadSerial += 1; loadOperation?.cancel(); editOperation?.cancel(); web?.stopLoading(); onClose?()
+        timer?.invalidate(); loadSerial += 1; galleryRevision += 1
+        showWhenReady = false; isLoading = false
+        loadOperation?.cancel(); editOperation?.cancel()
+        pendingSVG?.browser.navigationDelegate = nil; pendingSVG?.browser.stopLoading(); pendingSVG = nil
+        web?.navigationDelegate = nil; web?.stopLoading(); onClose?()
     }
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if isLoading {
+            let allowed = [#selector(previous(_:)), #selector(next(_:)), #selector(fullscreen(_:)), #selector(toggleFileList(_:)), #selector(alwaysOnTop(_:))]
+            return menuItem.action.map { allowed.contains($0) } == true && (menuItem.action != #selector(previous(_:)) && menuItem.action != #selector(next(_:)) || gallery.urls.count > 1)
+        }
         if menuItem.action == #selector(pickColor(_:)) { return gallery.current != nil && !samplingColor }
         if menuItem.action == #selector(openEditor(_:)) {
             menuItem.title = "用\(AppSettings.editorName)打开"

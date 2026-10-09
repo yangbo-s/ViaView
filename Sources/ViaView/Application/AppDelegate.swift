@@ -88,7 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenu
         if menu.items.isEmpty { menu.addItem(withTitle: "尚无最近项目", action: nil, keyEquivalent: "") }
     }
     @objc func about(_ sender: Any?) {
-        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "ViaView", .applicationVersion: "0.1.0", .credits: NSAttributedString(string: "原生看图，自由扩展。\nSwift · AppKit · 本地图像处理")])
+        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "ViaView", .applicationVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "", .credits: NSAttributedString(string: "原生看图，自由扩展。\nSwift · AppKit · 本地图像处理")])
     }
     @objc func clearCache(_ sender: Any?) { clearImageCaches() }
     func clearImageCaches() {

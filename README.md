@@ -2,7 +2,7 @@
 
 轻巧的 macOS 原生看图应用。让图片占据窗口，把操作留在需要时。
 
-[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.2/ViaView-0.1.2-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.2/ViaView-0.1.2-arm64.zip) · [更新记录](CHANGELOG.md)
+[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.3/ViaView-0.1.3-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.3/ViaView-0.1.3-arm64.zip) · [更新记录](CHANGELOG.md)
 
 ## 安装
 
@@ -45,6 +45,8 @@
 | `⌘,` | 设置 |
 
 更多快捷键可在“设置 → 快捷键”中搜索。
+
+在“设置 → 通用 → 外观”选择跟随系统、浅色或深色。首次安装默认跟随系统，其余选项使用应用默认值；升级保留已有偏好。全屏看图始终使用黑色背景。
 
 ## 从源码构建
 

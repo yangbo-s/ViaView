@@ -77,12 +77,18 @@ extension ViewerController {
         NSLayoutConstraint.activate([colorFeedback.centerXAnchor.constraint(equalTo: stage.centerXAnchor), colorFeedback.bottomAnchor.constraint(equalTo: stage.bottomAnchor, constant: -88), colorFeedback.widthAnchor.constraint(equalToConstant: 164), colorFeedback.heightAnchor.constraint(equalToConstant: 30)])
     }
     func refreshAppearance(fullScreen override: Bool? = nil) {
-        let fullScreen = override ?? (window?.styleMask.contains(.fullScreen) == true)
-        let dark = fullScreen || UserDefaults.standard.bool(forKey: "darkCanvas")
-        let background = fullScreen ? NSColor.black : NSColor(white: dark ? 0.10 : 0.93, alpha: 1)
+        usesFullScreenAppearance = override ?? (window?.styleMask.contains(.fullScreen) == true)
+        let appearance = usesFullScreenAppearance ? NSAppearance(named: .darkAqua) : nil
+        window?.appearance = appearance
+        stage.appearance = appearance
+        updateCanvasAppearance()
+    }
+    var usesDarkAppearance: Bool { stage.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua }
+    func updateCanvasAppearance() {
+        let background = usesFullScreenAppearance ? NSColor.black : NSColor(white: usesDarkAppearance ? 0.10 : 0.93, alpha: 1)
         stage.wantsLayer = true; stage.layer?.backgroundColor = background.cgColor
         window?.backgroundColor = background
-        stage.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-        window?.appearance = stage.appearance
+        canvas.needsDisplay = true
+        updateTitleContrast()
     }
 }

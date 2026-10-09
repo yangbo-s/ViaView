@@ -4,6 +4,7 @@ import AppKit
     static func main() {
         AppSettings.register()
         let app = NSApplication.shared
+        app.appearance = AppSettings.theme().appearance
         app.setActivationPolicy(.regular)
         let delegate = AppDelegate()
         app.delegate = delegate

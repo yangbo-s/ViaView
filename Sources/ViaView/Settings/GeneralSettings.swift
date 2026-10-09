@@ -11,7 +11,7 @@ struct GeneralSettings: View {
     @AppStorage("smoothRendering") private var smooth = true
     @AppStorage("swipeNavigate") private var swipe = true
     @AppStorage("zoomSensitivity") private var sensitivity = 1.0
-    @AppStorage("darkCanvas") private var dark = false
+    @AppStorage("themeMode") private var theme = AppTheme.system.rawValue
     @AppStorage("checkerboard") private var checkerboard = true
     @AppStorage("preloadImages") private var preload = true
     @AppStorage("cacheMB") private var cacheMB = 256
@@ -20,6 +20,14 @@ struct GeneralSettings: View {
     @State private var cacheCleared = false
     var body: some View {
         Form {
+            Section {
+                Picker("主题", selection: $theme) {
+                    ForEach(AppTheme.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
+                }
+                Toggle("透明区域显示棋盘格", isOn: $checkerboard)
+            } header: { Text("外观") } footer: {
+                Text("跟随系统自动切换浅色与深色。全屏看图始终使用黑色背景。")
+            }
             Section("窗口") {
                 Picker("拖动图片", selection: $selectOnDrag) {
                     Text("平移；⌘ 拖动框选").tag(false)
@@ -42,10 +50,6 @@ struct GeneralSettings: View {
                 Toggle("触控板左右轻扫切换图片", isOn: $swipe)
             } header: { Text("缩放与手势") } footer: {
                 Text("关闭平滑显示可查看像素边缘。Shift + 滚轮平移；缩放动画始终连续。")
-            }
-            Section("背景") {
-                Picker("图片周围", selection: $dark) { Text("浅色").tag(false); Text("深色").tag(true) }
-                Toggle("透明区域显示棋盘格", isOn: $checkerboard)
             }
             Section {
                 Toggle("预载相邻图片", isOn: $preload)
