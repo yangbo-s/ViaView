@@ -45,3 +45,6 @@ for artifact in "$PACKAGE_NAME.dmg" "$PACKAGE_NAME.zip" "$PACKAGE_NAME-SHA256SUM
   mv -f "$STAGING_ROOT/$artifact" "$PROJECT_ROOT/dist/$artifact"
 done
 print "发布包已生成：$PROJECT_ROOT/dist/$PACKAGE_NAME.{dmg,zip}"
+if [[ "${VIAVIEW_GENERATE_APPCAST:-0}" == 1 ]]; then
+  zsh "$PROJECT_ROOT/scripts/generate-appcast.sh"
+fi

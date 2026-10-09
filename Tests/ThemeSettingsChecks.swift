@@ -1,4 +1,5 @@
 import AppKit
+import Sparkle
 
 func runThemeSettingsChecks(_ check: (Bool, String) -> Void) {
     let domain = "ViaView.SettingsChecks.\(UUID().uuidString)"
@@ -46,7 +47,8 @@ func runThemeSettingsChecks(_ check: (Bool, String) -> Void) {
     defer { NSApp.appearance = prior }
     NSApp.appearance = AppTheme.light.appearance
     let viewer = ViewerController()
-    let settings = SettingsWindowController()
+    let updaterController = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: nil, userDriverDelegate: nil)
+    let settings = SettingsWindowController(updater: updaterController.updater)
     let panel = ViewerToolPanel(contentRect: NSRect(x: 0, y: 0, width: 300, height: 200), styleMask: [.titled, .closable, .utilityWindow], backing: .buffered, defer: false)
     panel.isReleasedWhenClosed = false
     panel.contentView = NSView()

@@ -109,6 +109,7 @@ import ViewerCore
         runAsyncLoadingChecks(check)
         runFileTypeSettingsChecks(check)
         runThemeSettingsChecks(check)
+        runUpdateSettingsChecks(check)
         print("AppKit: \(checks - failures) passed, \(failures) failed")
         exit(failures == 0 ? 0 : 1)
     }

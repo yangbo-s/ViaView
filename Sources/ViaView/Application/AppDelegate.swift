@@ -1,5 +1,6 @@
 import AppKit
 import ViewerCore
+import Sparkle
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemValidation {
     var viewers: [ViewerController] = []
@@ -9,9 +10,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenu
     var settingsController: SettingsWindowController?
     var settingsObserver: NSObjectProtocol?
     private var settingsRefreshScheduled = false
+    let updaterController = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: nil, userDriverDelegate: nil)
     func applicationDidFinishLaunching(_ notification: Notification) {
         _ = FileAccessStore.shared
         configureMenus()
+        updaterController.startUpdater()
         applySettings()
         settingsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: UserDefaults.standard, queue: .main) { [weak self] _ in self?.scheduleSettingsRefresh() }
         if viewers.isEmpty, UserDefaults.standard.bool(forKey: "restoreWindows") {
@@ -111,7 +114,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenu
         preferences(sender); settingsController?.showShortcuts()
     }
     @objc func preferences(_ sender: Any?) {
-        if settingsController == nil { settingsController = SettingsWindowController() }
+        if settingsController == nil { settingsController = SettingsWindowController(updater: updaterController.updater) }
         settingsController?.showWindow(nil); settingsController?.window?.makeKeyAndOrderFront(nil)
     }
 

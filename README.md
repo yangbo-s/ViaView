@@ -2,7 +2,7 @@
 
 轻巧的 macOS 原生看图应用。让图片占据窗口，把操作留在需要时。
 
-[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.3/ViaView-0.1.3-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.3/ViaView-0.1.3-arm64.zip) · [更新记录](CHANGELOG.md)
+[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.4/ViaView-0.1.4-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.4/ViaView-0.1.4-arm64.zip) · [更新记录](CHANGELOG.md)
 
 ## 安装
 
@@ -48,6 +48,8 @@
 
 在“设置 → 通用 → 外观”选择跟随系统、浅色或深色。首次安装默认跟随系统，其余选项使用应用默认值；升级保留已有偏好。全屏看图始终使用黑色背景。
 
+在“设置 → 更新”或 ViaView 菜单中检查新版本。默认自动检查更新；自动安装需手动开启，开启后会后台下载并在退出时安装。关闭自动检查会同时暂停自动安装，重新开启后恢复先前选择。更新通过 GitHub 下载并验证签名，不上传图片或系统概况。0.1.3 及更早版本需要手动安装一次 0.1.4，之后即可使用应用内更新。
+
 ## 从源码构建
 
 使用 Xcode 16 或更新版本；Liquid Glass 构建使用 macOS 26+ SDK。
@@ -72,6 +74,8 @@ zsh scripts/package.sh
 
 项目使用 Swift、AppKit 和系统图像框架。模块与状态设计见 [架构说明](docs/ARCHITECTURE.md)。
 
+Sparkle 依赖由 SwiftPM 下载并锁定，初次构建需要网络。维护者发布带更新源的版本时运行 `VIAVIEW_GENERATE_APPCAST=1 zsh scripts/package.sh`；签名密钥和发布顺序见 [更新发布说明](docs/UPDATES.md)。
+
 ## 许可
 
-[MIT License](LICENSE)。工具栏图标来自 [Lucide](https://lucide.dev/)，许可随[图标资源](Sources/ViaView/Resources/Lucide/LICENSE)提供。
+[MIT License](LICENSE)。工具栏图标来自 [Lucide](https://lucide.dev/)，许可随[图标资源](Sources/ViaView/Resources/Lucide/LICENSE)提供。更新框架 [Sparkle](https://sparkle-project.org/) 使用 BSD 许可，完整许可随应用内 `Sparkle-LICENSE` 交付。

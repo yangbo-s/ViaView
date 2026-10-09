@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check the shipped resource and current repository contracts, without building."""
 import hashlib
+import base64
 import json
 import plistlib
 import re
@@ -27,6 +28,21 @@ check('Existing application identity and sandbox remain compatible',
 minimum = re.search(r'\.macOS\(\.v(\d+)\)', package)
 check('Package and app deployment versions agree', minimum is not None
       and int(info['LSMinimumSystemVersion'].split('.')[0]) == int(minimum[1]))
+check('Sparkle uses HTTPS, signed feeds and verification before extraction',
+      info.get('SUFeedURL') == 'https://github.com/yangbo-s/ViaView/releases/latest/download/appcast.xml'
+      and len(base64.b64decode(info.get('SUPublicEDKey', ''), validate=True)) == 32
+      and info.get('SURequireSignedFeed') is True and info.get('SUVerifyUpdateBeforeExtraction') is True)
+check('Sparkle sandbox installer and matching Mach service permissions are configured',
+      info.get('SUEnableInstallerLauncherService') is True
+      and entitlements.get('com.apple.security.temporary-exception.mach-lookup.global-name') ==
+      [info['CFBundleIdentifier'] + '-spks', info['CFBundleIdentifier'] + '-spki'])
+check('Update defaults check automatically, require install opt-in and disable profiling',
+      info.get('SUEnableAutomaticChecks') is True and info.get('SUAutomaticallyUpdate') is False
+      and info.get('SUEnableSystemProfiling') is False)
+pins = json.loads((ROOT / 'Package.resolved').read_text())['pins']
+check('Sparkle is pinned to the reviewed release',
+      any(pin['identity'] == 'sparkle' and pin['state']['version'] == '2.10.0'
+          and pin['state']['revision'] == 'eef1a539a373c1f1a320624b1130fc5de7b2e100' for pin in pins))
 
 icons = ROOT / 'Sources/ViaView/Resources/Lucide'
 manifest = json.loads((icons / 'source.json').read_text())['upstream_svg_sha256']

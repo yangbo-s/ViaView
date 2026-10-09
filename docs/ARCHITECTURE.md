@@ -19,7 +19,7 @@ Swift Package 提供 `ViaView` 和 `ViewerChecks` 两个可执行产品，两者
 | `Viewer/ViewerSVG.swift`、`ViewerContextMenu.swift`、`ViewerColorPicking.swift` | 离线矢量显示、菜单／回收、系统采样 | 平台操作和错误返回归属窗口 |
 | `UI` | 工具栏、玻璃、图标、hover、标题、溢出菜单及 Controls／FlippedDocument | 消费 Viewer 状态，不另存图库或编辑模型 |
 | `Panels` | 工具窗归属、信息／调整、直方图、文件列表、标签 | 列表是 Viewer 状态的投影；标签按 URL 同步 |
-| `Settings` | 四个 NSHostingController 承载的原生表单 | 偏好即时保存，默认应用变更需用户主动点击 |
+| `Settings` | 五个 NSHostingController 承载的原生表单，包含更新设置 | 偏好即时保存，默认应用变更需用户主动点击；更新偏好由 Sparkle 持久化 |
 | `ViewerCore` | Gallery、ImageAsset、ImagePipeline、ImageEdits、SVGDocument、ViewportGeometry、FinderTags、ColorHex、ViewerError | 文件和图像操作可由检查程序独立调用 |
 | `ViewerChecks` | CheckRunner、拥有临时目录的 CheckFixtures 和领域检查函数 | 退出前清理自身夹具，不读取用户照片或通用剪贴板历史 |
 
@@ -80,6 +80,8 @@ Operation 取消减少无用工作，序号／身份检查决定结果是否仍�
 设置由 `@AppStorage`／UserDefaults 驱动。`AppDelegate.scheduleSettingsRefresh()` 将通知合并到下一次主队列执行，再应用背景、绘制、缓存预算和幻灯片间隔。必须保留该异步边界：原生控件布局本身可能注册 defaults，同步调用 `updateUI()` 会重入系统布局。文件夹新增授权可刷新相应窗口的相邻图片集合，并保留当前倍率与未导出调整。
 
 ## 工具链、资源与交付
+
+Sparkle 由 SwiftPM 锁定为 2.10.0。AppDelegate 持有唯一 SPUStandardUpdaterController，启动时启用调度；更新页通过 UpdateSettingsModel 观察 canCheckForUpdates、自动检查/安装、最后检查时间。关闭自动检查会使自动安装不可用，但保留先前安装偏好。检查按钮和菜单遵守更新器的可用状态，下载、校验、安装与错误 UI 委托 Sparkle。沙盒 XPC、密钥、发布流程及 ad-hoc 限制见 [更新发布说明](UPDATES.md)。
 
 `build.sh` 和 `check.sh` 共用 `scripts/lib/toolchain.zsh` 选择工具链、SDK 和缓存路径；使用者可显式设置 `DEVELOPER_DIR`、`VIAVIEW_REQUIRE_MODERN`、`VIAVIEW_BUILD_DIR`。严格模式要求 SDK 26+；旧 `VIA_VIEW_REQUIRE_MODERN` 仅作为弃用别名。选择工具链不修改全局 Xcode 设置。
 

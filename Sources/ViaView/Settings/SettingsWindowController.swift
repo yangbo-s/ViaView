@@ -1,9 +1,10 @@
 import AppKit
 import SwiftUI
+import Sparkle
 
 final class SettingsWindowController: NSWindowController {
     private let tabs: NSTabViewController
-    init() {
+    init(updater: SPUUpdater) {
         let tabs = NSTabViewController(); self.tabs = tabs
         tabs.tabStyle = .toolbar
         func add<V: View>(_ title: String, _ symbol: String, _ view: V) {
@@ -16,6 +17,7 @@ final class SettingsWindowController: NSWindowController {
         add("浏览", "folder", BrowsingSettings())
         add("文件类型", "doc.badge.gearshape", FileTypeSettings())
         add("快捷键", "keyboard", ShortcutSettings())
+        add("更新", "arrow.triangle.2.circlepath", UpdateSettings(updater: updater))
         let window = NSWindow(contentViewController: tabs)
         window.title = "ViaView 设置"; window.setContentSize(NSSize(width: 580, height: 590))
         window.styleMask = [.titled, .closable]; window.isReleasedWhenClosed = false
