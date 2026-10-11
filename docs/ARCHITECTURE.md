@@ -51,7 +51,7 @@ Operation 取消减少无用工作，序号／身份检查决定结果是否仍�
 
 编辑队列每窗并发为 1，只应用最后请求；图像加载与低优先级邻图预取共享最多 2 个解码任务。缓存命中的加载同样返回可取消 Operation，并在主 OperationQueue 调用完成函数。SVG 使用独立待显示 WebView，在导航完成后替换旧内容；切图与关闭解除旧代理并核对回调身份。全尺寸内容延伸至标题栏下方，因此本地事件路由先排除原生窗口按钮，再处理 SVG 拖动。
 
-文件类型的 `FileTypeSettingsModel` 通过 `FileTypeAssociationClient` 读写 NSWorkspace。单项与批量共用串行流程，跳过已关联的类型，禁止重入，逐项回读实际关联并汇总失败。判断 ViaView 使用 bundle identifier；同名应用不视为已设置。回归检查注入替身，不修改用户的系统关联。
+文件类型的 `FileTypeSettingsModel` 通过 `FileTypeAssociationClient` 读写 NSWorkspace。设为 ViaView 与单项／批量解绑共用串行流程，禁止重入，逐项回读实际关联并汇总失败。解绑要求明确选择其他应用，默认选择为空；推荐列表使用 NSWorkspace 的兼容应用，批量取交集，也可通过 NSOpenPanel 选择应用。执行前验证应用 bundle，解绑在每项写入前重新确认仍由 ViaView 打开，避免覆盖队列等待期间的外部选择。已设置／已解绑项自动跳过。关联成功以目标 bundle identifier 判定，同名应用不能冒充目标。回归检查注入替身，不修改用户的系统关联。
 
 ## 主题与初始偏好
 
