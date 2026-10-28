@@ -107,7 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenu
         if let text = NSApp.keyWindow?.firstResponder as? NSTextView {
             item.title = "复制"; return text.selectedRange().length > 0
         }
-        item.title = "复制图片 / 选区"
+        item.title = activeViewer?.liveText.selectedText.isEmpty == false ? "复制所选文字" : "复制图片 / 选区"
         return activeViewer?.displayedCG != nil && activeViewer?.editPending == false
     }
     @objc func shortcuts(_ sender: Any?) {

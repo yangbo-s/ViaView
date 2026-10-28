@@ -2,7 +2,7 @@
 
 轻巧的 macOS 原生看图应用。让图片占据窗口，把操作留在需要时。
 
-[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.5/ViaView-0.1.5-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.5/ViaView-0.1.5-arm64.zip) · [更新记录](CHANGELOG.md)
+[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.6/ViaView-0.1.6-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.6/ViaView-0.1.6-arm64.zip) · [更新记录](CHANGELOG.md)
 
 ## 安装
 
@@ -16,10 +16,10 @@
 
 ## 功能
 
-- **专注浏览**：窗口随图片比例与缩放调整，鼠标移到顶部或底部时显示工具栏。
+- **专注浏览**：窗口随图片比例与缩放调整，观看时隐藏全部窗口控件，移到边缘再显示浏览浮栏。
 - **顺手导航**：文件列表、缩略图网格、自然排序、幻灯片、全屏和窗口置顶。
 - **图像调整**：旋转、镜像、亮度、对比度、饱和度、曝光和滤镜，导出为 PNG、JPEG 或 TIFF。
-- **查看与提取**：EXIF、直方图、框选复制、取色复制 HEX、本地文字识别。
+- **查看与提取**：EXIF、直方图、框选复制、取色复制 HEX、图上文字选择与复制。
 - **融入 macOS**：Finder 标签、分享、打印、外部编辑器和文件夹授权管理。
 
 支持 JPEG、PNG、GIF、WebP、HEIC、TIFF、SVG、PDF 等格式；RAW 使用 macOS 图像框架解码。
@@ -36,13 +36,15 @@
 | `⌘0` / `⌘1` | 适应窗口 / 实际大小 |
 | `⌘B` / `⌘I` / `⌘F` | 文件列表 / 图片信息 / 图像调整 |
 | `⌘R` / `⌘L` | 向右 / 向左旋转 |
-| `⌘C` | 复制图片或选区 |
+| `⌘C` | 复制所选文字、图片或图像选区 |
 | `⌘E` | 取色并复制 HEX |
-| `⌘⇧T` | 识别文字 |
+| `⌘⇧T` | 开启 / 退出文字选择 |
 | `⌘⇧S` | 导出图片 |
 | 空格 | 播放 / 暂停幻灯片 |
-| `Esc` / `Delete` | 退出全屏 |
+| `Esc` / `Delete` | 退出全屏（文字模式下 Esc 先退出文字选择） |
 | `⌘,` | 设置 |
+
+图片有可识别文字时，底部悬停会出现实况文本按钮。开启后可拖选文字、按 `⌘C` 复制，或点击“复制全部”；`Esc` 返回纯看图。识别在本机完成，未编辑动画沿用弹窗识别。
 
 更多快捷键可在“设置 → 快捷键”中搜索。
 
@@ -80,4 +82,4 @@ Sparkle 依赖由 SwiftPM 下载并锁定，初次构建需要网络。维护者
 
 ## 许可
 
-[MIT License](LICENSE)。工具栏图标来自 [Lucide](https://lucide.dev/)，许可随[图标资源](Sources/ViaView/Resources/Lucide/LICENSE)提供。更新框架 [Sparkle](https://sparkle-project.org/) 使用 BSD 许可，完整许可随应用内 `Sparkle-LICENSE` 交付。
+[MIT License](LICENSE)。浏览控件图标来自 [Lucide](https://lucide.dev/)，许可随[图标资源](Sources/ViaView/Resources/Lucide/LICENSE)提供。更新框架 [Sparkle](https://sparkle-project.org/) 使用 BSD 许可，完整许可随应用内 `Sparkle-LICENSE` 交付。

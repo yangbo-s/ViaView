@@ -36,41 +36,36 @@ extension ViewerController {
         NSLayoutConstraint.activate([empty.centerXAnchor.constraint(equalTo: stage.centerXAnchor), empty.centerYAnchor.constraint(equalTo: stage.centerYAnchor), empty.widthAnchor.constraint(lessThanOrEqualTo: stage.widthAnchor, constant: -64)])
         progress.style = .spinning; progress.controlSize = .small; progress.isDisplayedWhenStopped = false; progress.isHidden = true
         empty.addArrangedSubview(progress)
+        pin(liveText.host, to: stage); configureLiveText()
         pin(glassLayer, to: stage)
-        for chrome in [topChrome, bottomChrome] { chrome.translatesAutoresizingMaskIntoConstraints = false; glassLayer.content.addSubview(chrome) }
+        topChrome.translatesAutoresizingMaskIntoConstraints = false
+        glassLayer.content.addSubview(topChrome)
+        bottomChrome.translatesAutoresizingMaskIntoConstraints = false
+        glassLayer.content.addSubview(bottomChrome)
         buildTopChrome()
-        let bottomStack = NSStackView(); bottomStack.spacing = 4; bottomStack.detachesHiddenViews = true
-        let specs: [(ToolbarIcon, String, String, Selector)] = [
-            (.zoomOut, "缩小 · ⌘－", "out", #selector(zoomOut(_:))),
-            (.zoomIn, "放大 · ⌘＋", "in", #selector(zoomIn(_:))),
-            (.fit, "适应窗口 · ⌘0", "fit", #selector(fit(_:))),
-            (.previous, "上一张", "previous", #selector(previous(_:))),
-            (.next, "下一张", "next", #selector(next(_:))),
-            (.play, "幻灯片 · 空格", "play", #selector(slideshow(_:))),
-            (.rotateRight, "向右旋转 · ⌘R", "rotate", #selector(rotateRight(_:))),
-            (.maximize, "全屏", "fullscreen", #selector(fullscreen(_:))) ]
-        for (icon, title, key, action) in specs {
-            let button = toolbarButton(icon, title, target: self, action: action); buttons[key] = button; bottomStack.addArrangedSubview(button)
-            if key == "fit" { bottomStack.addArrangedSubview(zoomLabel) }
-            if key == "previous" { bottomStack.addArrangedSubview(countLabel) }
+        func action(_ icon: ToolbarIcon, _ title: String, _ key: String, _ selector: Selector) -> NSButton {
+            let button = toolbarButton(icon, title, target: self, action: selector)
+            buttons[key] = button; return button
         }
-        countLabel.alignment = .center; countLabel.setContentHuggingPriority(.required, for: .horizontal)
-        countLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 42).isActive = true
-        pin(bottomStack, to: bottomFullChrome.content, inset: 10)
-        bottomCompactChrome.spacing = 56
-        for (icon, title, key, action) in [
-            (ToolbarIcon.previous, "上一张", "compactPrevious", #selector(previous(_:))),
-            (ToolbarIcon.next, "下一张", "compactNext", #selector(next(_:)))
-        ] {
-            let glass = GlassChrome(radius: 20)
-            let button = toolbarButton(icon, title, target: self, action: action, size: 32)
-            buttons[key] = button; pin(button, to: glass.content, inset: 4)
-            bottomCompactChrome.addArrangedSubview(glass)
-        }
-        let bottomLayouts = NSStackView(views: [bottomFullChrome, bottomCompactChrome])
-        bottomLayouts.detachesHiddenViews = true; bottomLayouts.spacing = 0
-        pin(bottomLayouts, to: bottomChrome)
-        NSLayoutConstraint.activate([bottomChrome.centerXAnchor.constraint(equalTo: glassLayer.content.centerXAnchor), bottomChrome.bottomAnchor.constraint(equalTo: glassLayer.content.bottomAnchor, constant: -12)])
+        let navigation = NSStackView(views: [
+            action(.previous, "上一张", "previous", #selector(previous(_:))), countLabel,
+            action(.next, "下一张", "next", #selector(next(_:)))
+        ])
+        navigation.spacing = ChromeMetrics.spacing
+        navigation.alignment = .centerY
+        countLabel.font = .monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+        countLabel.alignment = .center
+        countLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        countLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 32).isActive = true
+        pin(navigation, to: bottomSurface.content, inset: ChromeMetrics.inset)
+        pin(bottomSurface, to: bottomChrome)
+        NSLayoutConstraint.activate([
+            bottomChrome.centerXAnchor.constraint(equalTo: glassLayer.content.centerXAnchor),
+            bottomChrome.bottomAnchor.constraint(equalTo: glassLayer.content.bottomAnchor, constant: -ChromeMetrics.edgeInset),
+            bottomChrome.leadingAnchor.constraint(greaterThanOrEqualTo: glassLayer.content.leadingAnchor, constant: ChromeMetrics.edgeInset),
+            bottomChrome.trailingAnchor.constraint(lessThanOrEqualTo: glassLayer.content.trailingAnchor, constant: -ChromeMetrics.edgeInset),
+            bottomChrome.heightAnchor.constraint(equalToConstant: ChromeMetrics.height)
+        ])
         colorFeedback.isHidden = true; colorFeedback.drawsBackground = true; colorFeedback.backgroundColor = .windowBackgroundColor
         colorFeedback.alignment = .center; colorFeedback.wantsLayer = true; colorFeedback.layer?.cornerRadius = 8; colorFeedback.layer?.masksToBounds = true
         colorFeedback.translatesAutoresizingMaskIntoConstraints = false; stage.addSubview(colorFeedback)
@@ -89,6 +84,7 @@ extension ViewerController {
         stage.wantsLayer = true; stage.layer?.backgroundColor = background.cgColor
         window?.backgroundColor = background
         canvas.needsDisplay = true
-        updateTitleContrast()
+        if windowControlsVisible { updateTitleContrast() }
+        else { updateCommandControls() }
     }
 }

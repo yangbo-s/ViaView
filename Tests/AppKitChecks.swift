@@ -15,10 +15,21 @@ import ViewerCore
             if !condition { failures += 1 }
             print("\(condition ? "PASS" : "FAIL") \(name)")
         }
+        if CommandLine.arguments.contains("--design") {
+            runDesignChecks(check)
+            print("Design: \(checks - failures) passed, \(failures) failed")
+            exit(failures == 0 ? 0 : 1)
+        }
+        if CommandLine.arguments.contains("--live-text") {
+            runLiveTextChecks(check)
+            print("Live Text: \(checks - failures) passed, \(failures) failed")
+            exit(failures == 0 ? 0 : 1)
+        }
         let viewer = ViewerController()
+        check(viewer.windowButtons.allSatisfy { !$0.isHidden }, "empty window keeps native controls available before its first layout")
         viewer.window!.contentView!.superview!.layoutSubtreeIfNeeded()
         viewer.windowDidUpdate(Notification(name: NSWindow.didUpdateNotification, object: viewer.window))
-        check(!viewer.topChrome.isHidden && viewer.bottomChrome.isHidden && viewer.progress.isHidden, "empty window shows its aligned titlebar without inactive transport or spinner space")
+        check(viewer.window?.toolbar?.items.isEmpty == true && viewer.window?.titleVisibility == .hidden && viewer.bottomChrome.isHidden && viewer.progress.isHidden, "empty window keeps real window controls without a titlebar surface or inactive transport")
         let size = NSSize(width: 641, height: 641)
         let image = NSImage(size: size)
         viewer.asset = ImageAsset(url: URL(fileURLWithPath: "/tmp/viaview-check.png"), image: image, cgImage: nil, properties: [:])
@@ -59,31 +70,16 @@ import ViewerCore
         }
         let modifiedDelete = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command, timestamp: 0, windowNumber: 0, context: nil, characters: "", charactersIgnoringModifiers: "", isARepeat: false, keyCode: 51)!
         check(!isFullScreenExitKey(modifiedDelete), "modified Delete retains its existing shortcut")
-        for (width, compact, full) in [(360.0, false, false), (440, true, false), (600, false, true)] {
-            viewer.stage.frame.size.width = width
-            viewer.layoutChrome()
-            check(viewer.compactTools?.isHidden == !compact && viewer.toolGroups[0].isHidden == !full, "toolbar groups at \(Int(width)) pt")
-        }
         let fullScreenNotification = Notification(name: NSWindow.willEnterFullScreenNotification, object: viewer.window)
         viewer.windowWillEnterFullScreen(fullScreenNotification)
         check(viewer.window!.contentAspectRatio == .zero && viewer.window!.contentMaxSize.width > viewer.screenArea.width && viewer.window!.contentMaxSize.height > viewer.screenArea.height, "fullscreen releases image-shaped window constraints")
         viewer.windowDidFailToEnterFullScreen(viewer.window!)
-        check(!viewer.transitioningFullScreen && viewer.window!.contentAspectRatio == size && viewer.window!.toolbar!.isVisible, "cancelled fullscreen restores window constraints and toolbar")
+        check(!viewer.transitioningFullScreen && viewer.window!.contentAspectRatio == size && viewer.window!.toolbar?.items.isEmpty == true, "cancelled fullscreen restores window constraints and an unobstructed canvas")
         viewer.refreshAppearance(fullScreen: true)
         check(viewer.window!.backgroundColor == .black && viewer.stage.layer!.backgroundColor == NSColor.black.cgColor, "fullscreen background is pure black")
         viewer.refreshAppearance(fullScreen: false)
         check(viewer.window!.backgroundColor != .black, "leaving fullscreen restores the windowed canvas")
-        for width in [360.0, 440, 860] {
-            viewer.window!.setContentSize(NSSize(width: width, height: width))
-            viewer.window!.contentView!.superview!.layoutSubtreeIfNeeded()
-            viewer.windowDidUpdate(Notification(name: NSWindow.didUpdateNotification, object: viewer.window))
-            viewer.root.layoutSubtreeIfNeeded()
-            let native = viewer.windowButtons[0]
-            let nativeCenter = viewer.stage.convert(NSPoint(x: native.bounds.midX, y: native.bounds.midY), from: native).y
-            let actionCenter = viewer.moreButton.convert(viewer.moreButton.bounds, to: viewer.stage).midY
-            let titleCenter = viewer.nameLabel.convert(viewer.nameLabel.alignmentRect(forFrame: viewer.nameLabel.bounds), to: viewer.stage).midY
-            check(abs(nativeCenter - actionCenter) < 0.6 && abs(titleCenter - actionCenter) < 0.6, "title, toolbar and native controls share a center at \(Int(width)) pt (\(nativeCenter), \(actionCenter), \(titleCenter))")
-        }
+        runViewerChromeChecks(check)
         let panel = NSPanel(contentRect: NSRect(x: viewer.screenArea.minX, y: viewer.screenArea.minY, width: 320, height: 220), styleMask: [.titled, .closable, .utilityWindow], backing: .buffered, defer: false)
         panel.isReleasedWhenClosed = false
         panel.contentView = viewer.inspector
@@ -110,6 +106,8 @@ import ViewerCore
         runFileTypeSettingsChecks(check)
         runThemeSettingsChecks(check)
         runUpdateSettingsChecks(check)
+        runDesignChecks(check)
+        runLiveTextChecks(check)
         print("AppKit: \(checks - failures) passed, \(failures) failed")
         exit(failures == 0 ? 0 : 1)
     }

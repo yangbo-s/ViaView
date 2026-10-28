@@ -22,6 +22,7 @@ extension ViewerController {
         editSerial += 1; let editID = editSerial, loadID = loadSerial, edits = self.edits
         editOperation?.cancel()
         editPending = true
+        liveText.reset()
         let operation = BlockOperation(); editOperation = operation
         operation.addExecutionBlock { [weak self, weak operation] in
             guard operation?.isCancelled == false else { return }
@@ -37,8 +38,9 @@ extension ViewerController {
                     self.canvas.frame.size = NSSize(width: cg.width, height: cg.height); self.canvas.selection = .zero
                     self.zoomDriver.reset(self.scroll.magnification)
                     self.updateWindowLimits(); self.applyZoom(self.scroll.magnification, centerImage: true); self.updateUI()
+                    self.refreshLiveText()
                     if self.inspectorMode == .information { self.rebuildInspector() }
-                case .failure(let error): self.showError(error)
+                case .failure(let error): self.refreshLiveText(); self.showError(error)
                 }
             }
         }

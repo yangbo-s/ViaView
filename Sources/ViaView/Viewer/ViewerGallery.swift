@@ -2,6 +2,12 @@ import AppKit
 import ViewerCore
 
 extension ViewerController {
+    func canNavigate(_ direction: Int) -> Bool {
+        guard gallery.urls.count > 1, direction != 0 else { return false }
+        let wrap = UserDefaults.standard.object(forKey: "wrap") == nil || UserDefaults.standard.bool(forKey: "wrap")
+        return wrap || (direction < 0 ? gallery.index > 0 : gallery.index < gallery.urls.count - 1)
+    }
+
     func move(_ delta: Int) {
         guard gallery.urls.count > 1 else { return }
         let before = gallery.index
@@ -39,11 +45,6 @@ extension ViewerController {
             let interval = UserDefaults.standard.integer(forKey: "slideDelay")
             timer = Timer.scheduledTimer(withTimeInterval: TimeInterval(interval > 0 ? interval : 3), repeats: true) { [weak self] _ in self?.move(1) }
         }
-        updateSlideshowButton()
-    }
-    func updateSlideshowButton() {
-        buttons["play"]?.image = (timer == nil ? ToolbarIcon.play : .pause).image
-        buttons["play"]?.toolTip = timer == nil ? "开始幻灯片 · 空格" : "暂停幻灯片 · 空格"
-        buttons["play"]?.setAccessibilityLabel(timer == nil ? "开始幻灯片" : "暂停幻灯片")
+        updateCommandControls()
     }
 }

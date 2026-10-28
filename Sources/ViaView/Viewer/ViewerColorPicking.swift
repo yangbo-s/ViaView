@@ -4,8 +4,8 @@ import ViewerCore
 extension ViewerController {
     @objc func pickColor(_ sender: Any?) {
         guard gallery.current != nil, !samplingColor else { return }
-        samplingColor = true; timer?.invalidate(); timer = nil; updateSlideshowButton()
-        setChrome(false); topChrome.isHidden = true; bottomChrome.isHidden = true; colorFeedback.isHidden = true
+        samplingColor = true; timer?.invalidate(); timer = nil; updateCommandControls()
+        setWindowControls(false); setChrome(false); bottomChrome.isHidden = true; colorFeedback.isHidden = true
         window?.displayIfNeeded()
         NSColorSampler().show { [weak self] color in
             guard let self else { return }

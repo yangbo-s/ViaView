@@ -21,7 +21,7 @@ private final class ExternalEditorButtonCell: NSButtonCell {
     private var titleWidth: CGFloat { min(100, ceil(attributedTitle.size().width)) }
 
     override var cellSize: NSSize {
-        NSSize(width: ToolbarIcon.pointSize + gap + titleWidth + inset * 2, height: 32)
+        NSSize(width: ToolbarIcon.pointSize + gap + titleWidth + inset * 2, height: ChromeMetrics.buttonSize)
     }
 
     private func contentFrames(in bounds: NSRect) -> (image: NSRect, title: NSRect) {
@@ -49,6 +49,11 @@ private final class ExternalEditorButtonCell: NSButtonCell {
 
 extension ViewerController {
     func buildTopChrome() {
+        // The empty system toolbar positions the standard window buttons only.
+        // All image actions remain floating content that hides with the top edge.
+        let toolbar = NSToolbar(identifier: "ViaViewWindowControls")
+        toolbar.displayMode = .iconOnly
+        window?.toolbar = toolbar; window?.toolbarStyle = .unified
         let traffic = NSView(); traffic.translatesAutoresizingMaskIntoConstraints = false
         let trafficWidth = traffic.widthAnchor.constraint(equalToConstant: 80)
         NSLayoutConstraint.activate([trafficWidth, traffic.heightAnchor.constraint(equalToConstant: 36)])
@@ -58,13 +63,14 @@ extension ViewerController {
         nameLabel.layer?.shadowRadius = 2
         nameLabel.layer?.shadowOffset = CGSize(width: 0, height: -0.5)
         func action(_ icon: ToolbarIcon, _ title: String, _ selector: Selector) -> NSButton {
-            let button = toolbarButton(icon, title, target: self, action: selector, size: 32)
+            let button = toolbarButton(icon, title, target: self, action: selector)
             topActions.append(button); return button
         }
         func group(_ views: [NSView]) -> GlassChrome {
-            let chrome = GlassChrome(radius: 20)
-            let stack = NSStackView(views: views); stack.spacing = 4; stack.alignment = .centerY
-            pin(stack, to: chrome.content, inset: 4)
+            let chrome = GlassChrome(radius: ChromeMetrics.radius)
+            let stack = NSStackView(views: views); stack.spacing = ChromeMetrics.spacing; stack.alignment = .centerY
+            pin(stack, to: chrome.content, inset: ChromeMetrics.inset)
+            chrome.heightAnchor.constraint(equalToConstant: ChromeMetrics.height).isActive = true
             return chrome
         }
         let tools = group([
@@ -93,15 +99,13 @@ extension ViewerController {
         previewButton.translatesAutoresizingMaskIntoConstraints = false
         previewButton.setContentHuggingPriority(.required, for: .horizontal)
         previewButton.setContentCompressionResistancePriority(.required, for: .horizontal)
-        previewButton.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        previewButton.heightAnchor.constraint(equalToConstant: ChromeMetrics.buttonSize).isActive = true
         previewButton.setAccessibilityLabel("在预览中打开"); topActions.append(previewButton)
         let preview = group([previewButton])
         let pinButton = action(.pin, "窗口置顶", #selector(alwaysOnTop(_:)))
         let pinGroup = group([pinButton])
-        moreButton.target = self
-        let overflow = group([moreButton])
         toolGroups = [tools, files, preview, pinGroup]
-        let stack = NSStackView(views: [traffic, nameLabel, essentials] + toolGroups + [overflow])
+        let stack = NSStackView(views: [traffic, nameLabel, essentials] + toolGroups)
         stack.spacing = 8; stack.alignment = .centerY; stack.detachesHiddenViews = true
         stack.setCustomSpacing(16, after: traffic)
         pin(stack, to: topChrome)
@@ -113,11 +117,18 @@ extension ViewerController {
             topChrome.heightAnchor.constraint(equalToConstant: 44)])
     }
 
-    func updateTopActions() {
-        for button in topActions {
+    func updateCommandControls() {
+        for button in topActions + Array(buttons.values) {
             guard let action = button.action else { continue }
             let item = NSMenuItem(title: "", action: action, keyEquivalent: "")
             button.isEnabled = validateMenuItem(item)
+            if let title = commandTitle(for: action) {
+                let shortcut = action == #selector(toggleFileList(_:)) ? " · ⌘B"
+                    : action == #selector(toggleInfo(_:)) ? " · ⌘I"
+                    : action == #selector(toggleAdjustments(_:)) ? " · ⌘F" : ""
+                button.toolTip = title + shortcut
+                button.setAccessibilityLabel(title)
+            }
             if action == #selector(alwaysOnTop(_:)) {
                 let pinned = window?.level == .floating
                 button.image = (pinned ? ToolbarIcon.unpin : .pin).image
@@ -165,6 +176,6 @@ extension ViewerController {
         nameLabel.layer?.shadowColor = (darkText ? NSColor.white : NSColor.black).cgColor
         nameLabel.layer?.shadowOpacity = darkText ? 0.3 : 0.75
         nameLabel.toolTip = nameLabel.stringValue + "\n" + imageSummary
-        updateTopActions()
+        updateCommandControls()
     }
 }

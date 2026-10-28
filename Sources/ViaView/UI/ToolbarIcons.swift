@@ -1,7 +1,7 @@
 import AppKit
 
 /// Official Lucide SVGs, bundled locally. The same 24-unit artwork is rendered
-/// at 20 pt in both bars; resizing a window never resizes an individual glyph.
+/// at 20 pt; resizing a window never resizes an individual glyph.
 enum ToolbarIcon: String, CaseIterable {
     case list, tag, info, folder, share, pin, play, pause, maximize
     case pipette
@@ -16,7 +16,7 @@ enum ToolbarIcon: String, CaseIterable {
     case rotateRight = "rotate-cw"
     case externalEditor = "external-link"
 
-    static let pointSize: CGFloat = 20
+    static let pointSize = ChromeMetrics.iconSize
     private static var images: [ToolbarIcon: NSImage] = [:]
     private static var applicationImages: [URL: NSImage] = [:]
     // SwiftPM's generated lookup checks the app root, whereas a signed macOS
@@ -50,7 +50,7 @@ enum ToolbarIcon: String, CaseIterable {
     }
 }
 
-func toolbarButton(_ icon: ToolbarIcon, _ title: String, target: AnyObject?, action: Selector, size: CGFloat = 36) -> NSButton {
+func toolbarButton(_ icon: ToolbarIcon, _ title: String, target: AnyObject?, action: Selector, size: CGFloat = ChromeMetrics.buttonSize) -> NSButton {
     let button = NSButton(image: icon.image, target: target, action: action)
     button.bezelStyle = .texturedRounded; button.isBordered = false
     button.imageScaling = .scaleNone

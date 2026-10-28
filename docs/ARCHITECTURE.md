@@ -14,6 +14,7 @@ Swift Package 提供 `ViaView` 和 `ViewerChecks` 两个可执行产品，两者
 | `Application/AppSettings.swift` | 偏好默认值、应用设置、会话保存、授权后刷新 | 保持 UserDefaults 驱动的异步合并刷新 |
 | `Viewer/ViewerController.swift` | 单窗口共享状态、生命周期和能力验证 | 各职责用同模块 extension 分文件；没有另建互相复制状态的控制器 |
 | `Viewer/ViewerLoading.swift`、`ViewerGallery.swift` | 打开／扫描／加载、选择、排序、导航和幻灯片 | 排序只作用现有集合，不重新打开图片 |
+| `Viewer/LiveTextController.swift` | VisionKit 分析、文字覆盖层、选择与复制 | 仅使用当前预览像素；取消及 generation 隔离旧结果 |
 | `Viewer/ViewerEditing.swift`、`ViewerFileActions.swift` | 预览调整、导出、复制、OCR、分享和打印 | 编辑基于原图；外部写入由明确动作触发 |
 | `Viewer/ViewerViewport.swift`、`ZoomDriver.swift`、`ImageCanvas.swift` | 窗口／图像几何、连续缩放、拖动与框选 | 倍率更新不重复解码或套用滤镜 |
 | `Viewer/ViewerSVG.swift`、`ViewerContextMenu.swift`、`ViewerColorPicking.swift` | 离线矢量显示、菜单／回收、系统采样 | 平台操作和错误返回归属窗口 |
@@ -23,7 +24,7 @@ Swift Package 提供 `ViaView` 和 `ViewerChecks` 两个可执行产品，两者
 | `ViewerCore` | Gallery、ImageAsset、ImagePipeline、ImageEdits、SVGDocument、ViewportGeometry、FinderTags、ColorHex、ViewerError | 文件和图像操作可由检查程序独立调用 |
 | `ViewerChecks` | CheckRunner、拥有临时目录的 CheckFixtures 和领域检查函数 | 退出前清理自身夹具，不读取用户照片或通用剪贴板历史 |
 
-表中 Application／Viewer／UI／Panels／Settings 均位于 `Sources/ViaView`，核心和检查分别位于 `Sources/ViewerCore`、`Sources/ViewerChecks`。工具栏采用固定控件尺寸，随窗口宽度折叠完整分组。
+表中 Application／Viewer／UI／Panels／Settings 均位于 `Sources/ViaView`，核心和检查分别位于 `Sources/ViewerCore`、`Sources/ViewerChecks`。系统标题隐藏，空 NSToolbar 仅定位原生窗口按钮；原文件名和顶部操作以浮动覆盖层按顶部悬停显示；底部共用 40 pt 浮栏，所有尺寸均保留相同的翻页与页码文字，操作通过右键菜单访问；顶部与底部分别按对应边缘显隐，观看时隐藏全部控件，包括系统窗口按钮。
 
 ## 单窗口状态与命令归属
 
@@ -49,7 +50,7 @@ Operation 取消减少无用工作，序号／身份检查决定结果是否仍�
 
 排序调用 `Gallery.ordered`：按指定字段排序，用文件名与完整路径处理相同键；落地时保留实时当前 URL，只保留仍在当前图库的成员。排序期间导航或回收不会被旧结果反向恢复。目录扫描期间用户改变排序时，扫描完成后按当前设置重新排序；文件夹授权回填同样核对最新排序选择。
 
-编辑队列每窗并发为 1，只应用最后请求；图像加载与低优先级邻图预取共享最多 2 个解码任务。缓存命中的加载同样返回可取消 Operation，并在主 OperationQueue 调用完成函数。SVG 使用独立待显示 WebView，在导航完成后替换旧内容；切图与关闭解除旧代理并核对回调身份。全尺寸内容延伸至标题栏下方，因此本地事件路由先排除原生窗口按钮，再处理 SVG 拖动。
+编辑队列每窗并发为 1，只应用最后请求；图像加载与低优先级邻图预取共享最多 2 个解码任务。缓存命中的加载同样返回可取消 Operation，并在主 OperationQueue 调用完成函数。SVG 使用独立待显示 WebView，在导航完成后替换旧内容；切图与关闭解除旧代理并核对回调身份。全尺寸内容延伸至标题栏下方，因此本地事件路由先处理全屏退出按键，再排除可见的原生窗口按钮，最后处理 SVG 拖动。
 
 文件类型的 `FileTypeSettingsModel` 通过 `FileTypeAssociationClient` 读写 NSWorkspace。设为 ViaView 与单项／批量解绑共用串行流程，禁止重入，逐项回读实际关联并汇总失败。解绑要求明确选择其他应用，默认选择为空；推荐列表使用 NSWorkspace 的兼容应用，批量取交集，也可通过 NSOpenPanel 选择应用。执行前验证应用 bundle，解绑在每项写入前重新确认仍由 ViaView 打开，避免覆盖队列等待期间的外部选择。已设置／已解绑项自动跳过。关联成功以目标 bundle identifier 判定，同名应用不能冒充目标。回归检查注入替身，不修改用户的系统关联。
 
@@ -57,7 +58,7 @@ Operation 取消减少无用工作，序号／身份检查决定结果是否仍�
 
 `AppSettings.register` 在应用创建窗口之前注册默认值，首次安装的 `themeMode` 为 `system`，授权书签和待恢复图片列表为空。注册域只提供缺失值，不覆盖用户保存的设置；升级仅在尚未保存新主题且持久域存在旧 `darkCanvas` 值时，将其迁移为 `light` 或 `dark`。不存在持久偏好的新用户不会迁移到旧版的浅色默认。安装包仅包含应用代码与资源，不包含开发者的 UserDefaults。
 
-`AppTheme` 通过 `NSApplication.appearance` 应用全局外观，`system` 清除强制外观以继承 macOS；设置和工具窗口沿用该继承。全屏只对主图局部覆盖深色并保留纯黑背景，退出后移除覆盖。`WorkspaceView.viewDidChangeEffectiveAppearance` 更新画布的 CGColor 和标题对比度，使运行中的系统外观变化即时生效。
+`AppTheme` 通过 `NSApplication.appearance` 应用全局外观，`system` 清除强制外观以继承 macOS；设置和工具窗口沿用该继承。全屏只对主图局部覆盖深色并保留纯黑背景，退出后移除覆盖。`WorkspaceView.viewDidChangeEffectiveAppearance` 更新画布的 CGColor 和操作状态，使运行中的系统外观变化即时生效。
 
 ## 缓存与图像边界
 
@@ -88,3 +89,9 @@ Sparkle 由 SwiftPM 锁定为 2.10.0。AppDelegate 持有唯一 SPUStandardUpdat
 共享构建函数使用 `--build-system native --sdk`。该兼容处理用于确保实际 Mach-O SDK 标记与所选 SDK 一致；迁移构建引擎前必须让同一校验成立。`build.sh` 校验标记后，在 `dist` 的临时 staging 中放入可执行文件、Info.plist、图标和 `ViaView_ViaView.bundle`，签名并执行严格验证。只有暂存应用通过后才替换既有同身份产物；失败时清理 staging，必要时恢复原产物。同名但不同 bundle ID 的应用拒绝覆盖。
 
 `ToolbarIcons` 优先加载应用 `Contents/Resources` 内的 Lucide 资源，`Bundle.module` 保留开发回退。来源、哈希及许可位于 `Sources/ViaView/Resources/Lucide`。`python3 scripts/audit.py` 只读检查名称、部署版本、资源哈希／许可、当前文档链接与设计侧车源码路径。`scripts/package.sh` 在构建后生成 DMG、ZIP 和 SHA-256 校验文件；DMG 包含应用与 Applications 快捷入口。
+
+## 图上文字生命周期
+
+`LiveTextController` 使用共享 `ImageAnalyzer` 和每窗口独立 `ImageAnalysisOverlayView`，250 ms 可取消延迟避免快速翻页时启动无效分析。加载、编辑与关闭先清除结果；分析完成必须匹配当前 generation。静态显示结果提交后重新分析，不使用文件 URL 重新读取原图。未编辑动画及不支持 VisionKit 的设备保留原 Vision 弹窗路径，SVG 不提供 OCR。
+
+覆盖层固定于 viewport；`contentsRect(for:)` 将完整画布矩形转换为覆盖层的单位坐标，保留超出窗口的部分，随缩放与平移刷新。文字模式将拖选及右键交给系统覆盖层；退出后事件穿透至图片。复制命令优先复制所选文字，否则沿用图像复制；复制全部只读取当前识别结果。底部悬停显示系统入口，文字模式隐藏导航栏，Esc 优先退出选择。

@@ -83,6 +83,7 @@ extension ViewerController {
         // Let the first frame reach the window before optional tool-panel work.
         DispatchQueue.main.async { [weak self] in
             guard let self, self.loadSerial == serial else { return }
+            self.refreshLiveText()
             if self.inspectorPanel?.isVisible == true { self.rebuildInspector() }
             self.prefetchNeighbors()
         }
@@ -95,6 +96,7 @@ extension ViewerController {
     }
 
     func resetImageState(preservingPresentation: Bool = false) {
+        liveText.reset()
         zoomDriver.stop()
         loadOperation?.cancel(); editOperation?.cancel(); editSerial += 1; editPending = false
         asset = nil; displayedCG = nil; edits = ImageEdits(); canvas.selection = .zero

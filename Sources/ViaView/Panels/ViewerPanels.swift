@@ -18,12 +18,14 @@ final class ViewerToolPanel: NSPanel {
 
 extension ViewerController {
     @objc func toggleFileList(_ sender: Any?) {
+        defer { updateCommandControls() }
         fileList.update(urls: gallery.urls, selected: gallery.current, sort: sort, descending: descending)
         toggleUtilityPanel(fileList.view, title: "文件列表", panel: &fileListPanel, size: NSSize(width: 300, height: 460))
     }
     @objc func toggleInfo(_ sender: Any?) { toggleInspector(.information) }
     @objc func toggleAdjustments(_ sender: Any?) { toggleInspector(.adjustments) }
     func toggleInspector(_ mode: InspectorMode) {
+        defer { updateCommandControls() }
         let wasSame = inspectorMode == mode
         inspectorMode = mode; rebuildInspector()
         if !wasSame, let panel = inspectorPanel, panel.isVisible { panel.title = mode.title; return }
@@ -57,6 +59,7 @@ extension ViewerController {
         else { panel.orderFront(nil) }
     }
     @objc func editTags(_ sender: Any?) {
+        defer { updateCommandControls() }
         guard gallery.current != nil else { return }
         tagsController.setURL(gallery.current)
         toggleUtilityPanel(tagsController.view, title: "标签", panel: &tagsPanel, size: NSSize(width: 280, height: 400))

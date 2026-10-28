@@ -61,9 +61,9 @@ func runThemeSettingsChecks(_ check: (Bool, String) -> Void) {
     NSApp.appearance = AppTheme.dark.appearance
     check(waitForCheck { viewer.usesDarkAppearance && dark(settings.window!) && dark(panel) && viewer.window?.backgroundColor == NSColor(white: 0.10, alpha: 1) },
           "an inherited appearance change refreshes existing windows and canvas automatically")
-    check(viewer.nameLabel.textColor == .white, "dark canvas keeps an empty or transparent image title readable")
+    check(viewer.window?.titleVisibility == .hidden && dark(viewer.window!), "dark appearance preserves the hidden window title")
     NSApp.appearance = AppTheme.light.appearance
-    check(waitForCheck { !viewer.usesDarkAppearance && viewer.window?.backgroundColor == NSColor(white: 0.93, alpha: 1) && viewer.nameLabel.textColor == .black },
+    check(waitForCheck { !viewer.usesDarkAppearance && viewer.window?.backgroundColor == NSColor(white: 0.93, alpha: 1) && viewer.window?.titleVisibility == .hidden && !dark(viewer.window!) },
           "switching back to light refreshes the canvas and title without reopening")
     viewer.refreshAppearance(fullScreen: true)
     NSApp.appearance = AppTheme.dark.appearance

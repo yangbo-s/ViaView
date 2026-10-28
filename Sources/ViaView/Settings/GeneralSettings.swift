@@ -38,7 +38,7 @@ struct GeneralSettings: View {
                 Toggle("关闭最后一个窗口时退出", isOn: $quitLast)
             }
             Section {
-                Toggle("双击切换实际大小与适应屏幕", isOn: $doubleClick)
+                Toggle("双击切换实际大小与适应窗口", isOn: $doubleClick)
                 Toggle("平滑显示缩放后的图像", isOn: $smooth)
                 HStack {
                     Text("滚轮缩放速度")
@@ -49,7 +49,7 @@ struct GeneralSettings: View {
                 }
                 Toggle("触控板左右轻扫切换图片", isOn: $swipe)
             } header: { Text("缩放与手势") } footer: {
-                Text("关闭平滑显示可查看像素边缘。Shift + 滚轮平移；缩放动画始终连续。")
+                Text("关闭平滑显示可查看像素边缘。Shift + 滚轮平移；缩放动画遵循系统的“减少动态效果”设置。")
             }
             Section {
                 Toggle("预载相邻图片", isOn: $preload)

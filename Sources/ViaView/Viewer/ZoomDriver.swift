@@ -12,12 +12,19 @@ final class ZoomDriver {
     private var link: CADisplayLink?
     private var lastTime: CFTimeInterval = 0
     private var motion = SmoothZoom()
+    var shouldReduceMotion: () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
     var apply: ((CGFloat) -> Void)?
     var target: CGFloat { motion.targetScale }
     init() { proxy.owner = self }
     func reset(_ scale: CGFloat) { link?.isPaused = true; lastTime = 0; motion.reset(scale) }
     func aim(_ scale: CGFloat, in view: NSView) {
-        motion.aim(min(32, max(0.001, scale)))
+        let scale = min(32, max(0.001, scale))
+        if shouldReduceMotion() {
+            reset(scale)
+            apply?(scale)
+            return
+        }
+        motion.aim(scale)
         if link == nil {
             let displayLink = view.displayLink(target: proxy, selector: #selector(ZoomTick.tick(_:)))
             displayLink.add(to: .main, forMode: .common); link = displayLink
@@ -26,6 +33,12 @@ final class ZoomDriver {
         link?.isPaused = false
     }
     fileprivate func tick(_ link: CADisplayLink) {
+        if shouldReduceMotion() {
+            let target = motion.targetScale
+            reset(target)
+            apply?(target)
+            return
+        }
         let dt = lastTime == 0 ? max(link.duration, 1 / 120) : min(0.05, max(0, link.timestamp - lastTime))
         lastTime = link.timestamp
         apply?(motion.advance(seconds: dt))

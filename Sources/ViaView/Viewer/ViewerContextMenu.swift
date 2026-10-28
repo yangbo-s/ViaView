@@ -4,14 +4,28 @@ import ViewerCore
 extension ViewerController {
     func showImageContextMenu(with event: NSEvent) {
         guard let url = gallery.current else { return }
+        let menu = makeImageContextMenu(for: url)
+        NSMenu.popUpContextMenu(menu, with: event, for: stage)
+        refreshChrome()
+    }
+
+    func makeImageContextMenu(for url: URL) -> NSMenu {
         let menu = NSMenu()
         func add(_ title: String, _ action: Selector, _ key: String = "", modifiers: NSEvent.ModifierFlags = .command) {
             menu.addItem(menuItem(title, action, key, modifiers: modifiers, target: self))
         }
+        add("文件列表", #selector(toggleFileList(_:)), "b")
+        add("图片信息", #selector(toggleInfo(_:)), "i")
+        add("图像调整", #selector(toggleAdjustments(_:)), "f")
+        menu.addItem(.separator())
         let selected = canvas.selection.width > 1 && canvas.selection.height > 1
         add(selected ? "复制选区" : "复制图片", #selector(copyImage(_:)), "c")
+        add("选择图片文字", #selector(recognizeText(_:)), "t", modifiers: [.command, .shift])
         add("复制文件路径", #selector(copyPath(_:)), "c", modifiers: [.command, .option])
         menu.addItem(.separator())
+        if needsFolderAccess { add("选择图片所在文件夹…", #selector(grantFolder(_:))) }
+        add("分享图片…", #selector(share(_:)))
+        add("导出图片…", #selector(exportImage(_:)), "s", modifiers: [.command, .shift])
         add("在 Finder 中显示", #selector(reveal(_:)), "r", modifiers: [.command, .shift])
         if AppSettings.editorURL != nil {
             add("用\(AppSettings.editorName)打开", #selector(openEditor(_:)))
@@ -22,8 +36,22 @@ extension ViewerController {
         add("向右旋转", #selector(rotateRight(_:)), "r")
         add("向左旋转", #selector(rotateLeft(_:)), "l")
         menu.addItem(.separator())
-        add("适应屏幕", #selector(fit(_:)), "0")
-        add("实际大小", #selector(actualSize(_:)), "1")
+        let browsing = NSMenuItem(title: "浏览", action: nil, keyEquivalent: "")
+        let browsingMenu = NSMenu(title: "浏览")
+        browsingMenu.addItem(menuItem("上一张", #selector(previous(_:)), String(UnicodeScalar(NSLeftArrowFunctionKey)!), modifiers: [], target: self))
+        browsingMenu.addItem(menuItem("下一张", #selector(next(_:)), String(UnicodeScalar(NSRightArrowFunctionKey)!), modifiers: [], target: self))
+        browsingMenu.addItem(.separator())
+        browsingMenu.addItem(menuItem("幻灯片", #selector(slideshow(_:)), " ", modifiers: [], target: self))
+        browsingMenu.addItem(menuItem("全屏", #selector(fullscreen(_:)), "f", modifiers: [.command, .control], target: self))
+        browsing.submenu = browsingMenu; menu.addItem(browsing)
+        let zoom = NSMenuItem(title: "缩放", action: nil, keyEquivalent: "")
+        let zoomMenu = NSMenu(title: "缩放")
+        for (title, action, key) in [("放大", #selector(zoomIn(_:)), "="), ("缩小", #selector(zoomOut(_:)), "-"),
+                                     ("适应窗口", #selector(fit(_:)), "0"), ("实际大小", #selector(actualSize(_:)), "1")] {
+            zoomMenu.addItem(menuItem(title, action, key, target: self))
+        }
+        zoom.submenu = zoomMenu; menu.addItem(zoom)
+        add("窗口置顶", #selector(alwaysOnTop(_:)))
         menu.addItem(.separator())
         tagsController.setURL(url)
         menu.addItem(tagsController.menuColorRow())
@@ -31,8 +59,7 @@ extension ViewerController {
         add("取色并复制色号", #selector(pickColor(_:)))
         menu.addItem(.separator())
         add("移到废纸篓", #selector(moveToTrash(_:)), String(UnicodeScalar(NSBackspaceCharacter)!))
-        NSMenu.popUpContextMenu(menu, with: event, for: stage)
-        refreshChrome()
+        return menu
     }
 
     private func applicationsMenu(for url: URL) -> NSMenu {
@@ -83,7 +110,7 @@ extension ViewerController {
             guard alert.runModal() == .alertSecondButtonReturn else { return }
         }
         trashInProgress = true
-        timer?.invalidate(); timer = nil; updateSlideshowButton()
+        timer?.invalidate(); timer = nil; updateCommandControls()
         NSWorkspace.shared.recycle([url]) { [weak self] moved, error in
             DispatchQueue.main.async {
                 guard let self else { return }

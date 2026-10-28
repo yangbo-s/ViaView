@@ -55,6 +55,7 @@ final class FileListController: NSViewController, NSTableViewDataSource, NSTable
     private let empty = label("打开文件夹以浏览图片", size: 12, color: .secondaryLabelColor)
     private let mode = NSSegmentedControl(images: [NSImage(systemSymbolName: "list.bullet", accessibilityDescription: "列表")!, NSImage(systemSymbolName: "square.grid.2x2", accessibilityDescription: "网格")!], trackingMode: .selectOne, target: nil, action: nil)
     private let sort = NSPopUpButton()
+    private let directionButton = symbolButton("arrow.up", "切换为降序", target: nil, action: #selector(reverseSort), size: 24)
     private var descending = false
     private let cache = NSCache<NSURL, CachedThumbnail>()
     private var versions: [URL: ThumbnailVersion] = [:]
@@ -78,8 +79,9 @@ final class FileListController: NSViewController, NSTableViewDataSource, NSTable
         gridScroll.documentView = grid
         for scroll in [listScroll, gridScroll] { scroll.hasVerticalScroller = true; scroll.drawsBackground = false; scroll.borderType = .noBorder; scroll.autohidesScrollers = true }
         sort.addItems(withTitles: GallerySort.allCases.map(\.rawValue)); sort.target = self; sort.action = #selector(changeSort); sort.controlSize = .small; sort.setAccessibilityLabel("文件排序")
-        let reverse = symbolButton("arrow.up.arrow.down", "切换升序 / 降序", target: self, action: #selector(reverseSort), size: 24)
-        let footer = NSStackView(views: [sort, NSView(), reverse]); footer.spacing = 8
+        directionButton.target = self
+        directionButton.identifier = NSUserInterfaceItemIdentifier("sortDirection")
+        let footer = NSStackView(views: [sort, NSView(), directionButton]); footer.spacing = 8
         for v in [header, listScroll, gridScroll, footer, empty] { v.translatesAutoresizingMaskIntoConstraints = false; view.addSubview(v) }
         NSLayoutConstraint.activate([header.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 14), header.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -14), header.topAnchor.constraint(equalTo: view.topAnchor, constant: 10), header.heightAnchor.constraint(equalToConstant: 28), footer.leadingAnchor.constraint(equalTo: header.leadingAnchor), footer.trailingAnchor.constraint(equalTo: header.trailingAnchor), footer.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8), footer.heightAnchor.constraint(equalToConstant: 24), empty.centerXAnchor.constraint(equalTo: view.centerXAnchor), empty.centerYAnchor.constraint(equalTo: view.centerYAnchor)])
         for scroll in [listScroll, gridScroll] { NSLayoutConstraint.activate([scroll.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8), scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 6), scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -6), scroll.bottomAnchor.constraint(equalTo: footer.topAnchor, constant: -8)]) }
@@ -92,6 +94,7 @@ final class FileListController: NSViewController, NSTableViewDataSource, NSTable
         let changed = self.urls != urls, selectionChanged = self.selected != selected
         self.urls = urls; self.selected = selected; self.descending = descending
         self.sort.selectItem(withTitle: sort.rawValue)
+        updateSortControls()
         count.stringValue = "\(urls.count) 张图片"; empty.isHidden = !urls.isEmpty
         if changed {
             let retained = Set(urls)
@@ -173,7 +176,17 @@ final class FileListController: NSViewController, NSTableViewDataSource, NSTable
     }
     private func applyMode() { listScroll.isHidden = mode.selectedSegment == 1; gridScroll.isHidden = !listScroll.isHidden }
     @objc private func changeSort() { onSort?(GallerySort.allCases[sort.indexOfSelectedItem], descending) }
-    @objc private func reverseSort() { descending.toggle(); changeSort() }
+    private func updateSortControls() {
+        let current = descending ? "降序" : "升序"
+        let action = descending ? "切换为升序" : "切换为降序"
+        directionButton.image = NSImage(systemSymbolName: descending ? "arrow.down" : "arrow.up", accessibilityDescription: nil)
+        directionButton.toolTip = "当前按\(current)排列；\(action)"
+        directionButton.setAccessibilityLabel(action)
+        directionButton.setAccessibilityValue(current)
+        directionButton.isEnabled = urls.count > 1
+        sort.isEnabled = urls.count > 1
+    }
+    @objc private func reverseSort() { descending.toggle(); updateSortControls(); changeSort() }
     func numberOfRows(in tableView: NSTableView) -> Int { urls.count }
     func tableViewSelectionDidChange(_ notification: Notification) { guard !syncing, urls.indices.contains(table.selectedRow) else { return }; onSelect?(urls[table.selectedRow]) }
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {

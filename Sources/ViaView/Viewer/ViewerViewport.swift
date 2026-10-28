@@ -56,8 +56,7 @@ extension ViewerController {
         centerViewport(on: center)
         CATransaction.commit()
         applyingViewport = false
-        if chromeVisible || titleUsesCanvas != (scale < geometry.minimumScale) { updateTitleContrast() }
-        layoutChrome(); updateZoomLabel(); refreshChrome()
+        layoutChrome(); updateCanvasAccessibility(); refreshChrome()
     }
     func resetEmptyWindow() {
         guard let window, !window.styleMask.contains(.fullScreen) else { return }
@@ -84,22 +83,15 @@ extension ViewerController {
         scroll.reflectScrolledClipView(clip)
     }
     func layoutChrome() {
+        liveText.updateGeometry()
         let width = stage.bounds.width
-        bottomFullChrome.isHidden = width < 470
-        bottomCompactChrome.isHidden = width >= 470
         alignTopChromeWithWindowControls()
-        // Collapse complete groups, preserving a single centered filename row.
         for (group, threshold) in zip(toolGroups, [480.0, 580, 750, 810]) {
             group.isHidden = asset == nil || width < threshold
         }
         compactTools?.isHidden = asset == nil || width < 400 || width >= 480
-        nameLabel.font = .systemFont(ofSize: 14, weight: .semibold)
-        for key in ["out", "in", "fit"] { buttons[key]?.isHidden = width < 470 }
-        zoomLabel.isHidden = width < 470
-        for key in ["play", "rotate", "fullscreen"] { buttons[key]?.isHidden = width < 620 }
-        // The compact transport contains only the two navigation buttons.
-        countLabel.isHidden = width < 470
-        if width < 170 { topChrome.isHidden = true; bottomChrome.isHidden = true }
+        if width < 170 { topChrome.isHidden = true }
+        if width < 180 || stage.bounds.height < 180 { bottomChrome.isHidden = true }
     }
     func alignTopChromeWithWindowControls() {
         var inset: CGFloat = 8
@@ -146,7 +138,7 @@ extension ViewerController {
         layoutChrome()
         guard !applyingViewport, !transitioningFullScreen, let doc = scroll.documentView, asset != nil else { return }
         let scale = min(scroll.contentSize.width / max(1, doc.frame.width), scroll.contentSize.height / max(1, doc.frame.height))
-        zoomDriver.reset(scale); scroll.magnification = scale; centerDocument(); updateZoomLabel(); refreshChrome()
+        zoomDriver.reset(scale); scroll.magnification = scale; centerDocument(); updateCanvasAccessibility(); refreshChrome()
     }
     func windowWillEnterFullScreen(_ notification: Notification) {
         transitioningFullScreen = true
@@ -179,8 +171,8 @@ extension ViewerController {
         fit(nil)
     }
     private func restoreWindowedViewport() {
-        refreshAppearance()
         window?.toolbar?.isVisible = true
+        refreshAppearance()
         root.layoutSubtreeIfNeeded(); scroll.tile()
         transitioningFullScreen = false
         if asset == nil { resetEmptyWindow() }

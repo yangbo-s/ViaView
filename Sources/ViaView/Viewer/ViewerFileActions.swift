@@ -35,6 +35,7 @@ extension ViewerController {
         if let name = exportPanel?.nameFieldStringValue { exportPanel?.nameFieldStringValue = (name as NSString).deletingPathExtension + "." + (type.preferredFilenameExtension ?? "png") }
     }
     @objc func copyImage(_ sender: Any?) {
+        if liveText.copySelection(to: .general) { return }
         guard let cg = displayedCG else { return }
         let crop = canvas.selection.integral
         let output = crop.width > 1 && crop.height > 1 ? cg.cropping(to: crop) ?? cg : cg
@@ -48,7 +49,10 @@ extension ViewerController {
         guard let url = gallery.current else { return }
         let items: [Any] = edits.isIdentity ? [url] : (canvas.image.map { [$0] } ?? [url])
         let picker = NSSharingServicePicker(items: items)
-        let view = sender as? NSView ?? topChrome; picker.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
+        // A menu command must also work when pointer-driven chrome is hidden.
+        let view = sender as? NSView ?? stage
+        let anchor = view === stage ? NSRect(x: stage.bounds.midX, y: stage.bounds.midY, width: 1, height: 1) : view.bounds
+        picker.show(relativeTo: anchor, of: view, preferredEdge: .minY)
     }
     @objc func printImage(_ sender: Any?) {
         guard displayedCG != nil, let image = canvas.image else { return }
@@ -57,6 +61,13 @@ extension ViewerController {
         NSPrintOperation(view: view, printInfo: info).run()
     }
     @objc func recognizeText(_ sender: Any?) {
+        if supportsLiveTextForCurrentImage {
+            if liveText.isEngaged { liveText.endSelection(); return }
+            if liveText.state == .unavailable || liveText.state == .failed { refreshLiveText() }
+            window?.makeKeyAndOrderFront(nil)
+            liveText.beginSelection()
+            return
+        }
         guard let cg = displayedCG else { return }
         let serial = loadSerial
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in

@@ -24,7 +24,7 @@ func runLoadingChecks(_ check: (Bool, String) -> Void) {
         viewer.scroll.isHidden = false
         viewer.prepareImageWindow()
         viewer.showWindow(nil)
-        viewer.setChrome(true)
+        viewer.pointer(NSPoint(x: viewer.stage.bounds.midX, y: viewer.stage.bounds.maxY - 10))
         clickClose(viewer)
         check(viewer.window?.isVisible == false, "native close click closes a \(ext.uppercased()) viewer")
         viewer.window?.close()
@@ -123,7 +123,7 @@ func runAsyncLoadingChecks(_ check: (Bool, String) -> Void) {
         check(svgReady && vector.web === vector.scroll.documentView && !vector.scroll.isHidden && vector.empty.isHidden,
               "SVG commits only after navigation finishes in the offline renderer")
         if svgReady {
-            vector.setChrome(true)
+            vector.pointer(NSPoint(x: vector.stage.bounds.midX, y: vector.stage.bounds.maxY - 10))
             for kind in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
                 let button = vector.window!.standardWindowButton(kind)!
                 let point = button.convert(NSPoint(x: button.bounds.midX, y: button.bounds.midY), to: nil)
@@ -150,7 +150,7 @@ func runAsyncLoadingChecks(_ check: (Bool, String) -> Void) {
         let failedSVG = ViewerController()
         failedSVG.gallery = Gallery(urls: [unreadable]); failedSVG.isLoading = true; failedSVG.showWindow(nil)
         failedSVG.showSVG(ImageAsset(url: unreadable, image: NSImage(size: NSSize(width: 800, height: 600)), cgImage: nil, properties: [:]), serial: failedSVG.loadSerial)
-        check(!failedSVG.isLoading && failedSVG.window?.isVisible == true && failedSVG.emptyTitle.stringValue == "SVG 无法读取" && failedSVG.nameLabel.stringValue == "removed.svg",
+        check(!failedSVG.isLoading && failedSVG.window?.isVisible == true && failedSVG.emptyTitle.stringValue == "SVG 无法读取" && failedSVG.window?.title == "removed.svg",
               "SVG removed after size decoding presents an error and clears the loading title")
         failedSVG.close()
     } catch { check(false, "loading fixtures: \(error.localizedDescription)") }
