@@ -2,7 +2,7 @@
 
 轻巧的 macOS 原生看图应用。让图片占据窗口，把操作留在需要时。
 
-[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.7/ViaView-0.1.7-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.7/ViaView-0.1.7-arm64.zip) · [更新记录](CHANGELOG.md)
+[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.8/ViaView-0.1.8-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.8/ViaView-0.1.8-arm64.zip) · [更新记录](CHANGELOG.md)
 
 ## 安装
 
@@ -26,7 +26,7 @@
 
 ## 操作
 
-滚轮或双指捏合缩放，拖动平移，`⌘` + 拖动框选。打开文件夹后，可连续浏览其中的图片。
+滚轮或双指捏合缩放，缩到预设最小状态后停止；拖动平移，`⌘` + 拖动框选。打开文件夹后，可连续浏览其中的图片。
 
 | 快捷键 | 操作 |
 | --- | --- |

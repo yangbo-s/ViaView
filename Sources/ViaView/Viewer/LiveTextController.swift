@@ -160,7 +160,12 @@ import VisionKit
         // The native selection view owns drags once text mode is active. Its hit
         // test handles text, selection margins and the click that clears a range.
         if isEngaged { return true }
-        return overlay.hasSupplementaryInterface(at: overlay.convert(point, from: host))
+        guard !overlay.isSupplementaryInterfaceHidden else { return false }
+        var location = overlay.convert(point, from: host)
+        // VisionKit's interaction queries use a top-left origin, even when the
+        // AppKit overlay is unflipped (as with its contentsRect coordinates).
+        if !overlay.isFlipped { location.y = overlay.bounds.maxY - location.y + overlay.bounds.minY }
+        return overlay.hasSupplementaryInterface(at: location)
     }
 
     @discardableResult func copySelection(to pasteboard: NSPasteboard) -> Bool {

@@ -11,12 +11,17 @@ extension ViewerController {
         let available = window?.styleMask.contains(.fullScreen) == true ? scroll.contentSize : screenArea.size
         return ImageWindowGeometry(image: document.frame.size, available: available)
     }
+    var minimumZoomScale: CGFloat {
+        // Keep the preset minimum window filled, without forcing a small source
+        // image beyond its actual pixel size just to meet that window minimum.
+        min(viewportGeometry?.minimumScale ?? 0.001, 1 / (window?.backingScaleFactor ?? 2))
+    }
     func prepareImageWindow() {
         guard let geometry = viewportGeometry else { return }
         zoomWindowAnchor = nil
         updateWindowLimits()
         fitting = true
-        let initial = min(1 / (window?.backingScaleFactor ?? 2), geometry.maximumScale * 0.82)
+        let initial = max(minimumZoomScale, min(1 / (window?.backingScaleFactor ?? 2), geometry.maximumScale * 0.82))
         zoomDriver.reset(initial); applyZoom(initial, centerImage: true)
     }
     func updateWindowLimits() {
@@ -27,6 +32,7 @@ extension ViewerController {
     }
     func applyZoom(_ scale: CGFloat, centerImage: Bool = false) {
         guard let window, let document = scroll.documentView, let geometry = viewportGeometry else { return }
+        let scale = min(32, max(minimumZoomScale, scale))
         root.layoutSubtreeIfNeeded()
         let clip = scroll.contentView
         let visible = document.convert(clip.bounds, from: clip)
@@ -113,7 +119,7 @@ extension ViewerController {
     @objc func fit(_ sender: Any?) {
         guard let geometry = viewportGeometry else { return }
         fitting = true
-        let value = geometry.maximumScale * (window?.styleMask.contains(.fullScreen) == true ? 1 : 0.82)
+        let value = max(minimumZoomScale, geometry.maximumScale * (window?.styleMask.contains(.fullScreen) == true ? 1 : 0.82))
         zoomDriver.reset(value); applyZoom(value, centerImage: true)
     }
     @objc func actualSize(_ sender: Any?) {
@@ -126,7 +132,7 @@ extension ViewerController {
     func zoom(_ multiplier: CGFloat) {
         guard asset != nil, !scroll.isHidden else { return }
         fitting = false
-        zoomDriver.aim(zoomDriver.target * multiplier, in: stage)
+        zoomDriver.aim(max(minimumZoomScale, zoomDriver.target * multiplier), in: stage)
     }
     @objc func fullscreen(_ sender: Any?) {
         guard !transitioningFullScreen else { return }

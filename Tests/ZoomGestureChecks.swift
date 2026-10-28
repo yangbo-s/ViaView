@@ -3,9 +3,10 @@ import ViewerCore
 
 private final class ZoomInputEvent: NSEvent {
     var amount: CGFloat = 0
+    var precise = false
     override var scrollingDeltaX: CGFloat { 0 }
     override var scrollingDeltaY: CGFloat { amount }
-    override var hasPreciseScrollingDeltas: Bool { false }
+    override var hasPreciseScrollingDeltas: Bool { precise }
     override var modifierFlags: NSEvent.ModifierFlags { [] }
     override var magnification: CGFloat { amount }
 }
@@ -48,5 +49,68 @@ private final class ZoomInputEvent: NSEvent {
                   "\(name) zoom restores moved window center (drift=\(dx),\(dy) pt)")
             check(imageOffset < 1, "\(name) zoom keeps image centered inside viewport (offset=\(imageOffset) pt)")
         }
+    }
+    for size in [NSSize(width: 960, height: 640), NSSize(width: 641, height: 937)] {
+        viewer.canvas.frame = NSRect(origin: .zero, size: size)
+        viewer.prepareImageWindow()
+        for pinch in [false, true] {
+            for direction: CGFloat in [-1, 1] {
+                viewer.zoomDriver.shouldReduceMotion = { true }
+                viewer.actualSize(nil)
+                let window = viewer.window!, area = viewer.screenArea
+                window.setFrameOrigin(NSPoint(x: area.midX - window.frame.width / 2, y: area.midY - window.frame.height / 2))
+                viewer.showWindow(nil)
+                viewer.zoomDriver.shouldReduceMotion = { false }
+                let original = window.frame
+                var drift: CGFloat = 0
+                for _ in 0..<180 {
+                    event.precise = true
+                    event.amount = direction * (pinch ? 0.08 : 24)
+                    if pinch { viewer.scroll.magnify(with: event) }
+                    else { viewer.scroll.scrollWheel(with: event) }
+                    RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.008))
+                    while let pending = NSApp.nextEvent(matching: .any, until: Date(), inMode: .default, dequeue: true) {
+                        NSApp.sendEvent(pending)
+                    }
+                    NSApp.updateWindows()
+                    drift = max(drift, abs(window.frame.midX - original.midX))
+                }
+                _ = waitForCheck { abs(viewer.scroll.magnification - viewer.zoomDriver.target) < 1e-12 }
+                drift = max(drift, abs(window.frame.midX - original.midX))
+                check(drift < 1, "continuous \(pinch ? "pinch" : "wheel") \(direction) at \(size) retains horizontal center (\(drift) pt)")
+                if direction < 0 {
+                    let minimum = min(viewer.viewportGeometry!.minimumScale, 1 / window.backingScaleFactor)
+                    check(abs(viewer.scroll.magnification - minimum) < 1e-12,
+                          "\(pinch ? "pinch" : "wheel") stops at the preset minimum instead of shrinking to a dot")
+                    let frame = window.frame, scale = viewer.scroll.magnification
+                    let apply = viewer.zoomDriver.apply
+                    var extraFrames = 0
+                    viewer.zoomDriver.apply = { extraFrames += 1; apply?($0) }
+                    for reduced in [false, true] {
+                        viewer.zoomDriver.shouldReduceMotion = { reduced }
+                        for _ in 0..<200 {
+                            if pinch { viewer.scroll.magnify(with: event) }
+                            else { viewer.scroll.scrollWheel(with: event) }
+                        }
+                        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.05))
+                    }
+                    check(extraFrames == 0 && window.frame == frame && viewer.scroll.magnification == scale,
+                          "400 more \(pinch ? "pinches" : "wheel events") at minimum do not reapply zoom or move the window")
+                    viewer.zoomDriver.apply = apply
+                }
+            }
+        }
+    }
+    for size in [NSSize(width: 80, height: 60), NSSize(width: 10000, height: 10)] {
+        viewer.canvas.frame = NSRect(origin: .zero, size: size)
+        viewer.prepareImageWindow()
+        check(abs(viewer.scroll.magnification - viewer.zoomDriver.target) < 1e-12,
+              "initial zoom stays synchronized for small or panoramic images (\(size))")
+        viewer.zoomDriver.shouldReduceMotion = { true }
+        event.amount = -100
+        for _ in 0..<100 { viewer.scroll.scrollWheel(with: event) }
+        let minimum = min(viewer.viewportGeometry!.minimumScale, 1 / viewer.window!.backingScaleFactor)
+        check(abs(viewer.scroll.magnification - minimum) < 1e-12,
+              "small or panoramic images respect their reachable minimum (\(size))")
     }
 }

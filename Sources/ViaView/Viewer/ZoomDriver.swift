@@ -19,6 +19,8 @@ final class ZoomDriver {
     func reset(_ scale: CGFloat) { link?.isPaused = true; lastTime = 0; motion.reset(scale) }
     func aim(_ scale: CGFloat, in view: NSView) {
         let scale = min(32, max(0.001, scale))
+        // Repeated input at a limit must not restart a settled display link.
+        guard !motion.isSettled || abs(log(Double(scale)) - motion.target) > 1e-12 else { return }
         if shouldReduceMotion() {
             reset(scale)
             apply?(scale)

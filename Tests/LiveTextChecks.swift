@@ -120,6 +120,36 @@ import ViewerCore
     viewer.asset = ImageAsset(url: URL(fileURLWithPath: "/tmp/live-text.png"), image: NSImage(cgImage: pixels, size: .zero), cgImage: pixels, properties: [:])
     viewer.displayedCG = pixels; viewer.refreshLiveText()
     check(viewer.liveText.state == .analyzing, "committed static raster starts Live Text analysis")
+    viewer.canvas.image = viewer.asset?.image
+    viewer.canvas.frame = NSRect(x: 0, y: 0, width: pixels.width, height: pixels.height)
+    viewer.scroll.isHidden = false; viewer.empty.isHidden = true
+    viewer.prepareImageWindow(); viewer.showWindow(nil)
+    check(waitForCheck(timeout: 30) { viewer.liveText.state == .ready }, "viewer finishes native recognition before clicking its entry")
+    viewer.liveText.setHoverVisible(true)
+    viewer.root.layoutSubtreeIfNeeded()
+    viewer.window?.displayIfNeeded()
+    for _ in 0..<10 {
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.01))
+        while let event = NSApp.nextEvent(matching: .any, until: Date(), inMode: .default, dequeue: true) { NSApp.sendEvent(event) }
+        NSApp.updateWindows()
+    }
+    func nativeTextButton(in view: NSView) -> NSView? {
+        if view.accessibilityIdentifier() == "com.apple.visionkit.liveTextButton" { return view }
+        return view.subviews.lazy.compactMap { nativeTextButton(in: $0) }.first
+    }
+    let entry = nativeTextButton(in: viewer.liveText.overlay)
+    check(entry != nil, "native Live Text entry exists in the actual viewer hierarchy")
+    if let entry {
+        let center = NSPoint(x: entry.bounds.midX, y: entry.bounds.midY)
+        let point = viewer.root.convert(center, from: entry)
+        let hit = viewer.root.hitTest(point)
+        let nativeHit = viewer.liveText.overlay.hitTest(viewer.liveText.host.convert(center, from: entry))
+        check(hit != nil && hit === nativeHit && hit?.isDescendant(of: viewer.liveText.overlay) == true,
+              "a mouse click at the visible OCR entry reaches VisionKit's native responder")
+        viewer.liveText.setHoverVisible(false)
+        check(!viewer.liveText.ownsInteraction(at: viewer.liveText.host.convert(center, from: entry)),
+              "a hidden OCR entry does not swallow the click that reveals bottom controls")
+    }
     viewer.resetImageState(preservingPresentation: true)
     check(viewer.liveText.state == .unavailable, "retained loading pixels never retain old selectable text")
     viewer.liveText.update(image: pixels)
