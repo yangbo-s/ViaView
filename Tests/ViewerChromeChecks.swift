@@ -44,12 +44,66 @@ func runViewerChromeChecks(_ check: (Bool, String) -> Void) {
              ,
               "transport keeps one height and only navigation plus page count at \(Int(width)) pt")
     }
+    let largeGallery = (0..<1522).map { URL(fileURLWithPath: "/tmp/page-count-\($0).png") }
+    viewer.gallery = Gallery(urls: largeGallery)
+    viewer.showWindow(nil)
+    func settleLayout() {
+        window.contentView!.superview!.layoutSubtreeIfNeeded()
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.01))
+        while let event = NSApp.nextEvent(matching: .any, until: Date(), inMode: .default, dequeue: true) { NSApp.sendEvent(event) }
+        NSApp.updateWindows()
+        window.contentView!.superview!.layoutSubtreeIfNeeded()
+    }
+    for width: CGFloat in [320, 480, 900] {
+        window.setContentSize(NSSize(width: width, height: 420))
+        for index in [0, 183, 1521, 0] {
+            viewer.gallery.select(index); viewer.updateUI(); viewer.setChrome(true)
+            settleLayout()
+            let required = ceil(viewer.countLabel.intrinsicContentSize.width)
+            check(viewer.countLabel.bounds.width >= required - 0.1
+                  && viewer.bottomChrome.bounds.width <= required + 81
+                  && previous.bounds.width == ChromeMetrics.buttonSize && next.bounds.width == ChromeMetrics.buttonSize
+                  && viewer.bottomChrome.bounds.height == ChromeMetrics.height
+                  && abs(window.contentView!.bounds.width - width) < 1,
+                  "full page count \(viewer.countLabel.stringValue) fits naturally at \(Int(width)) pt (text=\(viewer.countLabel.bounds.width), needed=\(required))")
+        }
+    }
+    for width: CGFloat in [320, 480, 900] {
+        window.setContentSize(NSSize(width: width, height: 420))
+        for (current, total) in [(24_380, 86_420), (99_999, 99_999), (800_000, 1_280_000), (8_000_000, 12_800_000), (123_456_788, 123_456_789), (999_999_999, 999_999_999)] {
+            viewer.updatePageCount(current: current, total: total); settleLayout()
+            let full = PageCountText.full(current: current, total: total)
+            let shown = viewer.countLabel.stringValue
+            check(shown.hasPrefix(String(current)) && viewer.countLabel.bounds.width >= viewer.countLabel.intrinsicContentSize.width - 0.1
+                  && viewer.bottomChrome.bounds.width <= 200.1
+                  && viewer.bottomChrome.bounds.height == ChromeMetrics.height
+                  && abs(window.frame.width - width) < 1
+                  && (shown == full || shown.contains("约"))
+                  && viewer.countLabel.toolTip == full && viewer.countLabel.accessibilityValue() == full,
+                  "capped page count keeps the current index exact at \(Int(width)) pt: \(shown)")
+            if total < 100_000 { check(shown == full, "tens of thousands stay exact when they fit") }
+            if let approximate = shown.split(separator: "约").last, shown.contains("约") {
+                let multiplier = approximate.hasSuffix("亿") ? 100_000_000.0 : 10_000.0
+                check((Double(approximate.dropLast()) ?? 0) * multiplier >= Double(current),
+                      "abbreviated total does not appear smaller than the exact current position")
+            }
+        }
+        viewer.updatePageCount(current: 184, total: 1522); settleLayout()
+        check(viewer.countLabel.stringValue == "184 / 1522" && viewer.bottomChrome.bounds.width < 160,
+              "returning from a large gallery restores the compact exact count")
+    }
+    viewer.gallery = Gallery(urls: urls); viewer.updateUI()
     window.setContentSize(NSSize(width: 200, height: 420))
-    viewer.countLabel.stringValue = "1234567 / 7654321"
-    window.contentView!.superview!.layoutSubtreeIfNeeded(); viewer.layoutChrome(); viewer.root.layoutSubtreeIfNeeded()
-    check(viewer.bottomChrome.frame.width <= 176.1 && previous.bounds.width == ChromeMetrics.buttonSize
+    settleLayout()
+    let narrowFrame = window.frame
+    viewer.updatePageCount(current: 1_234_567, total: 7_654_321)
+    settleLayout(); viewer.layoutChrome(); viewer.root.layoutSubtreeIfNeeded()
+    // AppKit may clamp a requested width to the window's actual fitting minimum.
+    // The bar must fit that viewport without changing it or shrinking the buttons.
+    check(viewer.bottomChrome.frame.width <= viewer.stage.bounds.width - ChromeMetrics.edgeInset * 2 + 0.1
+          && window.frame == narrowFrame && previous.bounds.width == ChromeMetrics.buttonSize
           && next.bounds.width == ChromeMetrics.buttonSize,
-          "a long page count compresses before navigation hit areas")
+          "long page count fits the actual narrow viewport without resizing it (before=\(narrowFrame.width), after=\(window.frame.width), bar=\(viewer.bottomChrome.bounds.width))")
 
 
     let menu = viewer.makeImageContextMenu(for: urls[0])

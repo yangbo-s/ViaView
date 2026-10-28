@@ -55,7 +55,9 @@ extension ViewerController {
         navigation.alignment = .centerY
         countLabel.font = .monospacedDigitSystemFont(ofSize: 12, weight: .medium)
         countLabel.alignment = .center
-        countLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        // Prefer the full page count over the stack's compact fitting width.
+        // Window-edge constraints still win if the viewport really is too narrow.
+        countLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
         countLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 32).isActive = true
         pin(navigation, to: bottomSurface.content, inset: ChromeMetrics.inset)
         pin(bottomSurface, to: bottomChrome)
@@ -64,6 +66,7 @@ extension ViewerController {
             bottomChrome.bottomAnchor.constraint(equalTo: glassLayer.content.bottomAnchor, constant: -ChromeMetrics.edgeInset),
             bottomChrome.leadingAnchor.constraint(greaterThanOrEqualTo: glassLayer.content.leadingAnchor, constant: ChromeMetrics.edgeInset),
             bottomChrome.trailingAnchor.constraint(lessThanOrEqualTo: glassLayer.content.trailingAnchor, constant: -ChromeMetrics.edgeInset),
+            bottomChrome.widthAnchor.constraint(lessThanOrEqualToConstant: ChromeMetrics.maximumNavigationWidth),
             bottomChrome.heightAnchor.constraint(equalToConstant: ChromeMetrics.height)
         ])
         colorFeedback.isHidden = true; colorFeedback.drawsBackground = true; colorFeedback.backgroundColor = .windowBackgroundColor

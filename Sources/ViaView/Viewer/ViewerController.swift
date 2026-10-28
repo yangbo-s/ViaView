@@ -43,7 +43,7 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
     let bottomChrome = ChromeRow()
     let bottomSurface = GlassChrome(radius: ChromeMetrics.radius)
     var imageSummary = ""
-    let countLabel = label("", size: 12, weight: .medium)
+    let countLabel = PageCountLabel(labelWithString: "")
     let empty = NSStackView()
     let emptyTitle = label("打开一张图片", size: 24, weight: .semibold)
     let emptyDetail = label("也可以将图片或文件夹拖到这里", size: 13, color: .secondaryLabelColor)

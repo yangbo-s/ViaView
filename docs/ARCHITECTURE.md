@@ -103,3 +103,5 @@ Sparkle 由 SwiftPM 锁定为 2.10.0。AppDelegate 持有唯一 SPUStandardUpdat
 Live Text 入口的 hasSupplementaryInterface 查询使用左上角原点，与 AppKit 未翻转的覆盖层坐标显式转换；隐藏入口不参与命中。视图仍将真实鼠标事件交给 VisionKit 原生响应视图，不能只用 accessibility performClick 验证入口可用。
 
 加载提示在 presentImage 应用图片几何之前清空文字并隐藏：AppKit 隐藏视图仍会贡献 fittingSize，保留长文件名会强制窗口最小宽度，引发侧边空隙和额外 resize 回调。回归必须通过 openURLs/异步加载，覆盖相同像素的长短文件名、横图切竖图与持续滚轮/捏合；只设置 asset/canvas 不能覆盖该问题。ChromeRow 的非按钮区域接收窗口拖动，按钮保留原生响应；图片内容继续按可见范围决定移动窗口或平移图片。
+
+底栏页码使用原生 defaultHigh 抗压缩优先级，完整文字决定浮栏自然宽度，上限 200 pt，边缘约束保留视口限制；不按窗口档位缩放字体或按钮。PageCountText 先尝试完整数字，仅在实际文本宽度超过预算时简写总数为万／亿；当前序号保持精确，近似总数向上舍入，避免最终几张出现当前序号大于显示总数的假象。PageCountLabel 显式返回完整 AXValue，因为 NSTextField 会忽略 setAccessibilityValue 并使用显示文本；悬停同样保留完整数值。计数回归覆盖几万至亿级、宽度封顶、读屏、变长与变短，并等待真实窗口布局后核对几何。

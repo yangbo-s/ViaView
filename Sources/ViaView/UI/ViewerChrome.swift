@@ -16,7 +16,7 @@ extension ViewerController {
         window?.title = gallery.current?.lastPathComponent ?? "ViaView"; window?.representedURL = gallery.current
         nameLabel.stringValue = isLoading ? "正在打开 \(gallery.current?.lastPathComponent ?? "图片…")" : (gallery.current?.lastPathComponent ?? "ViaView")
         nameLabel.toolTip = nameLabel.stringValue
-        countLabel.stringValue = gallery.urls.isEmpty ? "—" : "\(gallery.index + 1) / \(gallery.urls.count)"
+        updatePageCount(current: gallery.index + 1, total: gallery.urls.count)
         if let asset {
             let w = edits.turns % 2 == 0 ? asset.pixelWidth : asset.pixelHeight, h = edits.turns % 2 == 0 ? asset.pixelHeight : asset.pixelWidth
             imageSummary = asset.isSVG ? "SVG · 矢量图像" : "\(w) × \(h) px  ·  \(asset.url.pathExtension.uppercased())\(asset.isPreview ? " · 大图预览" : "")"
@@ -31,9 +31,6 @@ extension ViewerController {
         }
         if fileListPanel?.isVisible == true { fileList.update(urls: gallery.urls, selected: gallery.current, sort: sort, descending: descending) }
         if tagsPanel?.isVisible == true { tagsController.setURL(gallery.current) }
-        countLabel.toolTip = countLabel.stringValue
-        countLabel.setAccessibilityLabel("图片序号")
-        countLabel.setAccessibilityValue(countLabel.stringValue)
         updateCommandControls(); updateCanvasAccessibility(); layoutChrome(); refreshChrome()
     }
     func updateCanvasAccessibility() {

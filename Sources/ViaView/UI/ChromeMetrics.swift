@@ -8,4 +8,6 @@ enum ChromeMetrics {
     static let edgeInset: CGFloat = 12
     static let height = buttonSize + inset * 2
     static let radius = height / 2
+    static let maximumNavigationWidth: CGFloat = 200
+    static let navigationTextWidth = maximumNavigationWidth - buttonSize * 2 - spacing * 2 - inset * 2
 }
