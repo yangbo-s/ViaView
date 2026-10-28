@@ -1,15 +1,19 @@
 import AppKit
 
-// Empty space between controls remains part of the draggable image.
+// Chrome moves the window even when the image underneath is zoomed and pannable.
 final class ChromeRow: NSView {
     override func hitTest(_ point: NSPoint) -> NSView? {
         guard let hit = super.hitTest(point) else { return nil }
         var view: NSView? = hit
         while let current = view, current !== self {
-            if current is NSButton || current is GlassChrome { return hit }
+            if current is NSButton { return hit }
             view = current.superview
         }
-        return nil
+        return self
+    }
+    override func mouseDown(with event: NSEvent) {
+        guard let window, !window.styleMask.contains(.fullScreen) else { return }
+        window.performDrag(with: event)
     }
 }
 

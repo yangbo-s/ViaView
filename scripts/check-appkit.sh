@@ -10,7 +10,9 @@ CORE_OBJECTS=()
 for source in "$PROJECT_ROOT"/Sources/ViewerCore/*.swift; do
   CORE_OBJECTS+=("$BUILD_ROOT/release/ViewerCore.build/${source:t}.o")
 done
-xcrun swiftc -swift-version 5 -sdk "$SDK_PATH" -target "$(uname -m)-apple-macosx14.0" \
+CHECK_OPTIONS=()
+if [[ "${VIAVIEW_OPTIMIZE_CHECKS:-0}" == 1 ]]; then CHECK_OPTIONS+=(-O); fi
+xcrun swiftc "${CHECK_OPTIONS[@]}" -swift-version 5 -sdk "$SDK_PATH" -target "$(uname -m)-apple-macosx14.0" \
   -I "$BUILD_ROOT/release/Modules" -F "$BUILD_ROOT/release" -framework Sparkle \
   -Xlinker -rpath -Xlinker "$BUILD_ROOT/release" "${APP_SOURCES[@]}" \
   "$BUILD_ROOT/release/ViaView.build/DerivedSources/resource_bundle_accessor.swift" \

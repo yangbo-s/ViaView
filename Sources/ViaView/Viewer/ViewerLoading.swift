@@ -76,6 +76,9 @@ extension ViewerController {
 
     func presentImage(_ asset: ImageAsset) {
         self.asset = asset; displayedCG = asset.cgImage
+        // Hidden AppKit stacks still contribute their text's fitting width to
+        // the window. Retire the loading message before applying image geometry.
+        emptyTitle.stringValue = ""; emptyDetail.stringValue = ""
         empty.isHidden = true; progress.stopAnimation(nil); progress.isHidden = true; scroll.isHidden = false
         isLoading = false
         zoomDriver.reset(1); prepareImageWindow(); updateUI(); finishWindowPresentation()

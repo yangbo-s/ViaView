@@ -101,3 +101,5 @@ Sparkle 由 SwiftPM 锁定为 2.10.0。AppDelegate 持有唯一 SPUStandardUpdat
 缩小下限由图片比例对应的最小窗口倍率决定，并以实际像素倍率封顶，避免小源图被强行放大。入口与 applyZoom 共用下限，初始/适应窗口同步 ZoomDriver 状态。边界处相同目标不重启已停止的 displayLink；滚轮与捏合共享该行为。
 
 Live Text 入口的 hasSupplementaryInterface 查询使用左上角原点，与 AppKit 未翻转的覆盖层坐标显式转换；隐藏入口不参与命中。视图仍将真实鼠标事件交给 VisionKit 原生响应视图，不能只用 accessibility performClick 验证入口可用。
+
+加载提示在 presentImage 应用图片几何之前清空文字并隐藏：AppKit 隐藏视图仍会贡献 fittingSize，保留长文件名会强制窗口最小宽度，引发侧边空隙和额外 resize 回调。回归必须通过 openURLs/异步加载，覆盖相同像素的长短文件名、横图切竖图与持续滚轮/捏合；只设置 asset/canvas 不能覆盖该问题。ChromeRow 的非按钮区域接收窗口拖动，按钮保留原生响应；图片内容继续按可见范围决定移动窗口或平移图片。

@@ -132,5 +132,19 @@ func runViewerChromeChecks(_ check: (Bool, String) -> Void) {
           "closing the list updates restored top tooltips")
     check(viewer.nameLabel.stringValue == urls[0].lastPathComponent && viewer.nameLabel.toolTip?.contains(urls[0].lastPathComponent) == true,
           "hover filename and tooltip identify the current image")
+    viewer.setWindowControls(true); viewer.root.layoutSubtreeIfNeeded()
+    let titlePoint = viewer.nameLabel.convert(NSPoint(x: viewer.nameLabel.bounds.midX, y: viewer.nameLabel.bounds.midY), to: viewer.root)
+    check(viewer.root.hitTest(titlePoint) === viewer.topChrome,
+          "filename drag belongs to window chrome instead of the image")
+    let group = viewer.toolGroups[0]
+    let padding = group.convert(NSPoint(x: group.bounds.midX, y: 1), to: viewer.root)
+    check(viewer.root.hitTest(padding) === viewer.topChrome,
+          "empty toolbar padding drags the window")
+    let button = listButtons.first { !$0.isHiddenOrHasHiddenAncestor }!
+    let buttonPoint = button.convert(NSPoint(x: button.bounds.midX, y: button.bounds.midY), to: viewer.root)
+    check(viewer.root.hitTest(buttonPoint) === button, "toolbar buttons retain click ownership")
+    viewer.setWindowControls(false)
+    check(viewer.root.hitTest(titlePoint) !== viewer.topChrome,
+          "hidden title chrome does not intercept the image")
     // Real Space transitions and Escape are covered by GUI QA.
 }

@@ -2,7 +2,7 @@
 
 轻巧的 macOS 原生看图应用。让图片占据窗口，把操作留在需要时。
 
-[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.8/ViaView-0.1.8-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.8/ViaView-0.1.8-arm64.zip) · [更新记录](CHANGELOG.md)
+[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.9/ViaView-0.1.9-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.9/ViaView-0.1.9-arm64.zip) · [更新记录](CHANGELOG.md)
 
 ## 安装
 
@@ -73,6 +73,8 @@ zsh scripts/check-appkit.sh
 python3 scripts/audit.py
 zsh scripts/package.sh
 ```
+
+竖图缩放回归可单独运行 `VIAVIEW_OPTIMIZE_CHECKS=1 zsh scripts/check-appkit.sh --portrait`，使用临时长短文件名夹具并记录优化构建耗时；在 `--portrait` 后追加图片路径可只读复现指定图片。
 
 应用和安装包输出到 `dist/`。`DEVELOPER_DIR` 可指定 Xcode，`VIAVIEW_BUILD_DIR` 可指定构建目录，`VIAVIEW_REQUIRE_MODERN=1` 可要求使用 macOS 26+ SDK。
 

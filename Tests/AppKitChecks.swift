@@ -25,6 +25,17 @@ import ViewerCore
             print("Live Text: \(checks - failures) passed, \(failures) failed")
             exit(failures == 0 ? 0 : 1)
         }
+        if CommandLine.arguments.contains("--portrait") {
+            let source = CommandLine.arguments.count == 3 ? URL(fileURLWithPath: CommandLine.arguments[2]) : nil
+            runPortraitWindowChecks(check, source: source)
+            print("Portrait: \(checks - failures) passed, \(failures) failed")
+            exit(failures == 0 ? 0 : 1)
+        }
+        if CommandLine.arguments.contains("--chrome") {
+            runViewerChromeChecks(check)
+            print("Chrome: \(checks - failures) passed, \(failures) failed")
+            exit(failures == 0 ? 0 : 1)
+        }
         if CommandLine.arguments.contains("--zoom-gestures") {
             runZoomGestureChecks(check)
             print("Zoom gestures: \(checks - failures) passed, \(failures) failed")
@@ -114,6 +125,7 @@ import ViewerCore
         runDesignChecks(check)
         runLiveTextChecks(check)
         runZoomGestureChecks(check)
+        runPortraitWindowChecks(check)
         print("AppKit: \(checks - failures) passed, \(failures) failed")
         exit(failures == 0 ? 0 : 1)
     }

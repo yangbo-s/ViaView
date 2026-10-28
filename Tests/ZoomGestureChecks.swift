@@ -1,7 +1,7 @@
 import AppKit
 import ViewerCore
 
-private final class ZoomInputEvent: NSEvent {
+final class ZoomInputEvent: NSEvent {
     var amount: CGFloat = 0
     var precise = false
     override var scrollingDeltaX: CGFloat { 0 }
