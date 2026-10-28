@@ -13,6 +13,7 @@ extension ViewerController {
     }
     func prepareImageWindow() {
         guard let geometry = viewportGeometry else { return }
+        zoomWindowAnchor = nil
         updateWindowLimits()
         fitting = true
         let initial = min(1 / (window?.backingScaleFactor ?? 2), geometry.maximumScale * 0.82)
@@ -35,7 +36,11 @@ extension ViewerController {
         if !window.styleMask.contains(.fullScreen), !transitioningFullScreen {
             let desired = window.frameRect(forContentRect: NSRect(origin: .zero, size: geometry.windowSize(at: scale))).size
             let old = window.frame
-            var frame = NSRect(x: old.midX - desired.width / 2, y: old.midY - desired.height / 2, width: desired.width, height: desired.height)
+            // Edge clamping must not become the center of the next zoom step.
+            // A user move/resize starts a new anchor from the actual window frame.
+            let anchor = zoomWindowAnchor.flatMap { $0.frame == old ? $0.center : nil }
+                ?? NSPoint(x: old.midX, y: old.midY)
+            var frame = NSRect(x: anchor.x - desired.width / 2, y: anchor.y - desired.height / 2, width: desired.width, height: desired.height)
             let area = screenArea
             frame.origin.x = max(area.minX, min(area.maxX - frame.width, frame.minX))
             frame.origin.y = max(area.minY, min(area.maxY - frame.height, frame.minY))
@@ -44,6 +49,7 @@ extension ViewerController {
                 window.setFrame(frame, display: false)
                 root.layoutSubtreeIfNeeded()
             }
+            zoomWindowAnchor = (anchor, window.frame)
         }
         scroll.magnification = min(32, max(0.001, scale))
         scroll.tile()
@@ -180,6 +186,7 @@ extension ViewerController {
     }
     func windowDidChangeScreen(_ notification: Notification) {
         guard !applyingViewport, !transitioningFullScreen, asset != nil else { return }
+        zoomWindowAnchor = nil
         zoomDriver.reset(scroll.magnification); updateWindowLimits(); applyZoom(scroll.magnification)
     }
 }

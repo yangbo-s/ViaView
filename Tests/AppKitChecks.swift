@@ -25,6 +25,11 @@ import ViewerCore
             print("Live Text: \(checks - failures) passed, \(failures) failed")
             exit(failures == 0 ? 0 : 1)
         }
+        if CommandLine.arguments.contains("--zoom-gestures") {
+            runZoomGestureChecks(check)
+            print("Zoom gestures: \(checks - failures) passed, \(failures) failed")
+            exit(failures == 0 ? 0 : 1)
+        }
         let viewer = ViewerController()
         check(viewer.windowButtons.allSatisfy { !$0.isHidden }, "empty window keeps native controls available before its first layout")
         viewer.window!.contentView!.superview!.layoutSubtreeIfNeeded()
@@ -108,6 +113,7 @@ import ViewerCore
         runUpdateSettingsChecks(check)
         runDesignChecks(check)
         runLiveTextChecks(check)
+        runZoomGestureChecks(check)
         print("AppKit: \(checks - failures) passed, \(failures) failed")
         exit(failures == 0 ? 0 : 1)
     }

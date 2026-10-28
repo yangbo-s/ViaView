@@ -54,6 +54,7 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
     var chromeGeneration = 0
     var chromeVisible = true
     var windowControlsVisible = true
+    var zoomWindowAnchor: (center: NSPoint, frame: NSRect)?
     var inspectorMode = InspectorMode.information
     var buttons: [String: NSButton] = [:]
     let editQueue: OperationQueue = { let q = OperationQueue(); q.maxConcurrentOperationCount = 1; q.qualityOfService = .userInitiated; return q }()
