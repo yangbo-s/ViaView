@@ -44,6 +44,7 @@ extension ViewerController {
         if windowControlsVisible { topChrome.layoutSubtreeIfNeeded(); updateTitleContrast() }
     }
     func pointer(_ point: NSPoint?) {
+        defer { updateResizeRegions() }
         guard !samplingColor else {
             liveText.setHoverVisible(false, suppressed: true)
             setWindowControls(false); setChrome(false); return

@@ -73,6 +73,7 @@ extension ViewerController {
         colorFeedback.alignment = .center; colorFeedback.wantsLayer = true; colorFeedback.layer?.cornerRadius = 8; colorFeedback.layer?.masksToBounds = true
         colorFeedback.translatesAutoresizingMaskIntoConstraints = false; stage.addSubview(colorFeedback)
         NSLayoutConstraint.activate([colorFeedback.centerXAnchor.constraint(equalTo: stage.centerXAnchor), colorFeedback.bottomAnchor.constraint(equalTo: stage.bottomAnchor, constant: -88), colorFeedback.widthAnchor.constraint(equalToConstant: 164), colorFeedback.heightAnchor.constraint(equalToConstant: 30)])
+        pin(resizeOverlay, to: root)
     }
     func refreshAppearance(fullScreen override: Bool? = nil) {
         usesFullScreenAppearance = override ?? (window?.styleMask.contains(.fullScreen) == true)

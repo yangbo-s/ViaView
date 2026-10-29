@@ -25,6 +25,7 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
     var feedbackGeneration = 0
     let root = NSView()
     let stage = WorkspaceView(frame: .zero)
+    let resizeOverlay = ImageResizeOverlay(frame: .zero)
     let scroll = ImageScrollView()
     let canvas = ImageCanvas(frame: .zero)
     let liveText = LiveTextController()
@@ -88,6 +89,7 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
         window.autorecalculatesKeyViewLoop = true
         super.init(window: window); window.delegate = self; window.contentView = root
         buildLayout()
+        resizeOverlay.onResize = { [weak self] edge, event in self?.resizeImageWindow(from: edge, with: event) }
         stage.onAppearanceChange = { [weak self] in self?.updateCanvasAppearance() }
         refreshAppearance()
         canvas.onNavigate = { [weak self] in self?.move($0) }
@@ -132,6 +134,10 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
                 return event
             }
             let point = self.stage.convert(event.locationInWindow, from: nil)
+            if event.type == .leftMouseDown, !event.modifierFlags.contains(.control) {
+                self.pointer(point)
+                if self.resizeOverlay.edge(at: self.resizeOverlay.convert(event.locationInWindow, from: nil)) != nil { return event }
+            }
             if (event.type == .leftMouseDown || event.type == .rightMouseDown),
                self.glassLayer.hitTest(point) == nil,
                self.liveText.ownsInteraction(at: self.liveText.host.convert(point, from: self.stage)) { return event }
@@ -162,6 +168,7 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
             let available = stage.bounds.width >= 180 && stage.bounds.height >= 180 && !liveText.isEngaged
             bottomChrome.isHidden = asset == nil || !available || stage.bounds.height < 180
         }
+        updateResizeRegions()
     }
     func windowDidBecomeKey(_ notification: Notification) {
         windowButtons.forEach { $0.needsDisplay = true }

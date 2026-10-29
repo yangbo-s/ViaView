@@ -150,6 +150,11 @@ import ViewerCore
         check(!viewer.liveText.ownsInteraction(at: viewer.liveText.host.convert(center, from: entry)),
               "a hidden OCR entry does not swallow the click that reveals bottom controls")
     }
+    viewer.liveText.beginSelection(); viewer.updateResizeRegions()
+    check(viewer.liveText.isEngaged && viewer.resizeOverlay.regions.isEmpty,
+          "native text selection keeps edge drags instead of expanded resize handles")
+    viewer.liveText.endSelection(); viewer.updateResizeRegions()
+    check(!viewer.resizeOverlay.regions.isEmpty, "leaving text selection restores expanded resize handles")
     viewer.resetImageState(preservingPresentation: true)
     check(viewer.liveText.state == .unavailable, "retained loading pixels never retain old selectable text")
     viewer.liveText.update(image: pixels)

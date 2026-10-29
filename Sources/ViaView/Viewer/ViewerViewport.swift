@@ -104,6 +104,7 @@ extension ViewerController {
         compactTools?.isHidden = asset == nil || width < 400 || width >= 480
         if width < 170 { topChrome.isHidden = true }
         if width < 180 || stage.bounds.height < 180 { bottomChrome.isHidden = true }
+        updateResizeRegions()
     }
     func alignTopChromeWithWindowControls() {
         var inset: CGFloat = 8
