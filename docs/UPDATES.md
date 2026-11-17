@@ -20,6 +20,8 @@ Sparkle 的 Installer.xpc 配合 SUEnableInstallerLauncherService 与应用 ID �
 4. 推送源码和对应版本标签；创建 GitHub 草稿 Release 并上传以上四个文件，核对附件 SHA-256。
 5. 全部核对后公开并标记 Latest；匿名下载附件，校验哈希和签名，并从真实应用检查更新。
 
+DMG 验收使用 `/private/tmp` 下的临时只读挂载点，避免工作区卷拒绝嵌套挂载；卸载后清理临时目录。挂载、签名或内容比对失败仍会终止打包。
+
 更新 URL 固定为 `https://github.com/yangbo-s/ViaView/releases/latest/download/appcast.xml`。每个新 Latest Release 都必须带有签名 appcast.xml，否则客户端检查会失败。ZIP 的 URL 指向具体版本，不能覆盖旧附件。不要通过删除历史 Release 修正更新错误；修复后递增 build 发布。
 
 签名账户可用 `VIAVIEW_SPARKLE_ACCOUNT` 指定，必须与包内公钥匹配。`VIAVIEW_BUILD_DIR` 可改变构建与工具位置。测试更新安装时使用独立副本与隔离偏好，不降低正式包的版本或替换用户正在使用的应用。

@@ -17,9 +17,11 @@ if [[ ! "$VERSION" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]]; then
 fi
 PACKAGE_NAME="$APP_NAME-$VERSION-$PACKAGE_ARCH"
 STAGING_ROOT="$(mktemp -d "$PROJECT_ROOT/dist/.viaview-package.XXXXXX")"
+MOUNT_ROOT=""
 MOUNT_PATH=""
 function cleanup_package() {
-  if [[ -n "$MOUNT_PATH" ]]; then hdiutil detach "$MOUNT_PATH" >/dev/null || true; fi
+  if [[ -n "$MOUNT_PATH" ]]; then hdiutil detach "$MOUNT_PATH" >/dev/null || return 1; fi
+  if [[ -n "$MOUNT_ROOT" ]]; then rm -rf "$MOUNT_ROOT"; fi
   rm -rf "$STAGING_ROOT"
 }
 trap cleanup_package EXIT
@@ -29,9 +31,12 @@ ln -s /Applications "$STAGING_ROOT/volume/Applications"
 hdiutil create -volname "$APP_NAME" -srcfolder "$STAGING_ROOT/volume" -format UDZO "$STAGING_ROOT/$PACKAGE_NAME.dmg"
 ditto -c -k --sequesterRsrc --keepParent "$APP_DIR" "$STAGING_ROOT/$PACKAGE_NAME.zip"
 hdiutil verify "$STAGING_ROOT/$PACKAGE_NAME.dmg"
-MOUNT_PATH="$STAGING_ROOT/mounted"
-mkdir -p "$MOUNT_PATH"
-hdiutil attach -readonly -nobrowse -mountpoint "$MOUNT_PATH" "$STAGING_ROOT/$PACKAGE_NAME.dmg" >/dev/null
+# Disk Arbitration can refuse mount points within a workspace volume.
+# Keep the read-only verification mount in the system temporary directory.
+MOUNT_ROOT="$(mktemp -d /private/tmp/viaview-package-mount.XXXXXX)"
+mkdir "$MOUNT_ROOT/mounted"
+hdiutil attach -readonly -nobrowse -mountpoint "$MOUNT_ROOT/mounted" "$STAGING_ROOT/$PACKAGE_NAME.dmg" >/dev/null
+MOUNT_PATH="$MOUNT_ROOT/mounted"
 codesign --verify --deep --strict "$MOUNT_PATH/$APP_NAME.app"
 cmp "$APP_DIR/Contents/MacOS/$APP_NAME" "$MOUNT_PATH/$APP_NAME.app/Contents/MacOS/$APP_NAME"
 [[ "$(readlink "$MOUNT_PATH/Applications")" == /Applications ]]
