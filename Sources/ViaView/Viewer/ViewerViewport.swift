@@ -16,13 +16,16 @@ extension ViewerController {
         // image beyond its actual pixel size just to meet that window minimum.
         min(viewportGeometry?.minimumScale ?? 0.001, 1 / (window?.backingScaleFactor ?? 2))
     }
-    func prepareImageWindow() {
+    func prepareImageWindow(preservingZoom: Bool = false) {
         guard let geometry = viewportGeometry else { return }
+        // Carry the requested scale across navigation, even before a zoom
+        // animation settles. Capture it before new limits can resize the window.
+        let retainedScale = preservingZoom && !fitting ? zoomDriver.target : nil
         zoomWindowAnchor = nil
         updateWindowLimits()
-        fitting = true
-        let initial = max(minimumZoomScale, min(1 / (window?.backingScaleFactor ?? 2), geometry.maximumScale * 0.82))
-        zoomDriver.reset(initial); applyZoom(initial, centerImage: true)
+        fitting = retainedScale == nil
+        let scale = max(minimumZoomScale, retainedScale ?? min(1 / (window?.backingScaleFactor ?? 2), geometry.maximumScale * 0.82))
+        zoomDriver.reset(scale); applyZoom(scale, centerImage: true)
     }
     func updateWindowLimits() {
         guard let window, let geometry = viewportGeometry, !window.styleMask.contains(.fullScreen) else { return }

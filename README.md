@@ -2,7 +2,7 @@
 
 轻巧的 macOS 原生看图应用。让图片占据窗口，把操作留在需要时。
 
-[下载 DMG](https://github.com/yangbo-s/ViaView/releases/download/v0.1.11/ViaView-0.1.11-arm64.dmg) · [下载 ZIP](https://github.com/yangbo-s/ViaView/releases/download/v0.1.11/ViaView-0.1.11-arm64.zip) · [更新记录](CHANGELOG.md)
+[下载最新版（DMG / ZIP）](https://github.com/yangbo-s/ViaView/releases/latest) · [更新记录](CHANGELOG.md)
 
 ## 安装
 
@@ -27,6 +27,8 @@
 ## 操作
 
 滚轮或双指捏合缩放，缩到预设最小状态后停止；拖动平移，`⌘` + 拖动框选。打开文件夹后，可连续浏览其中的图片。
+
+手动缩放后，切换上一张、下一张或从文件列表选图会沿用当前倍率；重新打开图片或文件夹时恢复默认大小。
 
 也可以拖动窗口边缘或四角按图片比例缩放：边缘内侧 10 pt、四角 22×22 pt 为缩放热区，悬停时显示方向光标。
 
@@ -77,6 +79,8 @@ zsh scripts/package.sh
 ```
 
 竖图缩放回归可单独运行 `VIAVIEW_OPTIMIZE_CHECKS=1 zsh scripts/check-appkit.sh --portrait`，使用临时长短文件名夹具并记录优化构建耗时；在 `--portrait` 后追加图片路径可只读复现指定图片。
+
+切图保留缩放回归可单独运行 `zsh scripts/check-appkit.sh --zoom-navigation`，覆盖连续浏览、动画中的快速切换、不同尺寸与 SVG 切换、加载失败恢复和新窗口默认大小。
 
 应用和安装包输出到 `dist/`。`DEVELOPER_DIR` 可指定 Xcode，`VIAVIEW_BUILD_DIR` 可指定构建目录，`VIAVIEW_REQUIRE_MODERN=1` 可要求使用 macOS 26+ SDK。
 

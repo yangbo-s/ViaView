@@ -4,6 +4,7 @@ import ViewerCore
 extension ViewerController {
     func openURLs(_ urls: [URL]) {
         guard let first = urls.first else { return }
+        fitting = true
         timer?.invalidate(); timer = nil
         galleryRevision += 1; let revision = galleryRevision
         urls.forEach { FileAccessStore.shared.retain($0) }
@@ -81,7 +82,7 @@ extension ViewerController {
         emptyTitle.stringValue = ""; emptyDetail.stringValue = ""
         empty.isHidden = true; progress.stopAnimation(nil); progress.isHidden = true; scroll.isHidden = false
         isLoading = false
-        zoomDriver.reset(1); prepareImageWindow(); updateUI(); finishWindowPresentation()
+        prepareImageWindow(preservingZoom: true); updateUI(); finishWindowPresentation()
         let serial = loadSerial
         // Let the first frame reach the window before optional tool-panel work.
         DispatchQueue.main.async { [weak self] in
@@ -106,7 +107,7 @@ extension ViewerController {
         feedbackGeneration += 1; colorFeedback.isHidden = true
         pendingSVG?.browser.navigationDelegate = nil; pendingSVG?.browser.stopLoading(); pendingSVG = nil
         if !preservingPresentation {
-            zoomDriver.reset(1); canvas.image = nil
+            fitting = true; zoomDriver.reset(1); canvas.image = nil
             web?.navigationDelegate = nil; web?.stopLoading(); web?.removeFromSuperview(); web = nil
             scroll.isHidden = true
         }

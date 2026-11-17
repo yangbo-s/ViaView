@@ -41,6 +41,11 @@ import ViewerCore
             print("Zoom gestures: \(checks - failures) passed, \(failures) failed")
             exit(failures == 0 ? 0 : 1)
         }
+        if CommandLine.arguments.contains("--zoom-navigation") {
+            runZoomNavigationChecks(check)
+            print("Zoom navigation: \(checks - failures) passed, \(failures) failed")
+            exit(failures == 0 ? 0 : 1)
+        }
         if CommandLine.arguments.contains("--resize") {
             runImageResizeChecks(check)
             print("Resize: \(checks - failures) passed, \(failures) failed")
@@ -124,6 +129,7 @@ import ViewerCore
         viewer.window?.close()
         runLoadingChecks(check)
         runAsyncLoadingChecks(check)
+        runZoomNavigationChecks(check)
         runFileTypeSettingsChecks(check)
         runThemeSettingsChecks(check)
         runUpdateSettingsChecks(check)
