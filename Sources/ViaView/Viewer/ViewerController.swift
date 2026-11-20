@@ -74,6 +74,8 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
     var fileListPanel: NSPanel?
     var inspectorPanel: NSPanel?
     var needsFolderAccess = false
+    var pendingFolderAccessPrompt = false
+    var folderAccessPanel: NSOpenPanel?
     var windowButtons: [NSButton] {
         [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].compactMap { window?.standardWindowButton($0) }
     }
@@ -109,6 +111,7 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
     override func showWindow(_ sender: Any?) {
         if isLoading, window?.isVisible != true { showWhenReady = true; return }
         super.showWindow(sender)
+        offerFolderAccessIfNeeded()
     }
 
     func finishWindowPresentation() {
@@ -119,6 +122,7 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
             window?.displayIfNeeded()
             super.showWindow(nil)
         }
+        offerFolderAccessIfNeeded()
     }
 
     func routeViewerEvent(_ event: NSEvent) -> NSEvent? {
@@ -178,10 +182,15 @@ final class ViewerController: NSWindowController, NSWindowDelegate, NSMenuItemVa
         guard notification.object as? NSWindow === window else { return }
         (NSApp.delegate as? AppDelegate)?.lastActiveViewer = self
     }
+    func windowDidEndSheet(_ notification: Notification) {
+        guard notification.object as? NSWindow === window else { return }
+        offerFolderAccessIfNeeded()
+    }
     func windowWillClose(_ notification: Notification) {
         guard notification.object as? NSWindow === window else { return }
         zoomDriver.stop(); fileListPanel?.close(); inspectorPanel?.close(); tagsPanel?.close()
         timer?.invalidate(); loadSerial += 1; galleryRevision += 1
+        dismissFolderAccessPrompt()
         showWhenReady = false; isLoading = false
         loadOperation?.cancel(); editOperation?.cancel()
         liveText.reset()

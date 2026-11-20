@@ -2,16 +2,18 @@ import AppKit
 import ViewerCore
 
 extension ViewerController {
-    func openURLs(_ urls: [URL]) {
+    func openURLs(_ urls: [URL], offerFolderAccess: Bool = false) {
         guard let first = urls.first else { return }
         fitting = true
         timer?.invalidate(); timer = nil
-        galleryRevision += 1; let revision = galleryRevision
+        galleryRevision += 1
+        dismissFolderAccessPrompt()
         urls.forEach { FileAccessStore.shared.retain($0) }
         let isFolder = (try? first.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
         needsFolderAccess = false
         gallery = Gallery(urls: excludingRecycledFiles(isFolder ? [] : urls.filter(Gallery.accepts)), selected: first)
         if gallery.current != nil {
+            pendingFolderAccessPrompt = offerFolderAccess && urls.count == 1
             NSDocumentController.shared.noteNewRecentDocumentURL(first)
             loadCurrent()
             // Multiple explicitly selected files form their own gallery.
@@ -21,6 +23,20 @@ extension ViewerController {
             showMessage("正在读取图片…", detail: "", loading: true); updateUI()
         }
         let folder = isFolder ? first : first.deletingLastPathComponent()
+        scanGallery(in: folder, recentDocument: first)
+    }
+
+    func refreshFolderGallery(navigateBy step: Int? = nil) {
+        guard needsFolderAccess, let current = gallery.current else { return }
+        galleryRevision += 1
+        dismissFolderAccessPrompt()
+        needsFolderAccess = false
+        updateUI()
+        scanGallery(in: current.deletingLastPathComponent(), navigateBy: step)
+    }
+
+    private func scanGallery(in folder: URL, recentDocument: URL? = nil, navigateBy step: Int? = nil) {
+        let revision = galleryRevision
         let sort = self.sort, descending = self.descending, scan = scanFolder
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let scanned = Result { try scan(folder, sort, descending) }
@@ -35,18 +51,29 @@ extension ViewerController {
                     self.sortRevision += 1
                     self.gallery = Gallery(urls: self.excludingRecycledFiles(candidates), selected: selected)
                     self.needsFolderAccess = false
-                case .failure:
-                    self.needsFolderAccess = !isFolder
+                case .failure(let error):
+                    let cocoa = (error as? CocoaError)?.code
+                    let posix = (error as? POSIXError)?.code
+                    self.needsFolderAccess = selected != nil &&
+                        (cocoa == .fileReadNoPermission || posix == .EACCES || posix == .EPERM)
                 }
-                if self.sort != sort || self.descending != descending { self.reorderGallery() }
+                if !self.needsFolderAccess { self.pendingFolderAccessPrompt = false }
                 if selected == nil, self.gallery.current != nil {
-                    NSDocumentController.shared.noteNewRecentDocumentURL(first); self.loadCurrent()
+                    if let recentDocument { NSDocumentController.shared.noteNewRecentDocumentURL(recentDocument) }
+                    self.loadCurrent()
                 } else if self.gallery.current == nil {
                     self.resetImageState()
                     self.showMessage("没有可浏览的图片", detail: "选择包含常见图片格式的文件夹；若文件夹未授权，请重新通过“打开”选择它。", loading: false)
                 }
                 self.updateUI()
+                let pendingStep = self.gallery.current == selected && !self.needsFolderAccess ? step : nil
+                if self.sort != sort || self.descending != descending {
+                    self.reorderGallery(navigateBy: pendingStep)
+                } else if let pendingStep {
+                    self.move(pendingStep)
+                }
                 if self.asset != nil { self.prefetchNeighbors() }
+                self.offerFolderAccessIfNeeded()
             }
         }
     }

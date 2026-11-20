@@ -66,6 +66,7 @@ func runAsyncLoadingChecks(_ check: (Bool, String) -> Void) {
         try NSBitmapImageRep(cgImage: context.makeImage()!).representation(using: .png, properties: [:])!.write(to: second)
         try Data("broken".utf8).write(to: broken)
         try Data("<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'><rect width='800' height='600' fill='teal'/></svg>".utf8).write(to: svg)
+        try Data("not an image".utf8).write(to: folder.appendingPathComponent("notes.txt"))
 
         let scanGate = DispatchSemaphore(value: 0)
         let direct = ViewerController(imagePipeline: ImagePipeline(), scanFolder: { _, _, _ in
@@ -83,6 +84,64 @@ func runAsyncLoadingChecks(_ check: (Bool, String) -> Void) {
               "retained pixels cannot be edited or copied as the pending file")
         check(waitForCheck { direct.asset?.url == second }, "navigation commits the replacement image")
         direct.window?.close()
+
+        let directoryAccess = DispatchSemaphore(value: 0)
+        let restricted = ViewerController(scanFolder: { directory, sort, descending in
+            guard directoryAccess.wait(timeout: .now()) == .success else { throw CocoaError(.fileReadNoPermission) }
+            return try Gallery.scan(directory, sort: sort, descending: descending)
+        })
+        restricted.openURLs([second]); restricted.showWindow(nil)
+        check(waitForCheck { restricted.needsFolderAccess && restricted.asset?.url == second },
+              "the selected image remains visible when macOS denies listing its folder")
+        check(restricted.canNavigate(-1) && restricted.canNavigate(1) &&
+              restricted.buttons["previous"]?.isEnabled == true && restricted.buttons["next"]?.isEnabled == true,
+              "both navigation commands are available to request access to the current folder")
+        restricted.next(nil)
+        let permissionPanel = restricted.window?.attachedSheet as? NSOpenPanel
+        check(permissionPanel?.directoryURL?.resolvingSymlinksInPath() == folder.resolvingSymlinksInPath(),
+              "navigation starts the folder picker in the selected image's directory")
+        permissionPanel?.cancel(nil)
+        check(waitForCheck { restricted.window?.attachedSheet == nil } &&
+              restricted.needsFolderAccess && restricted.asset?.url == second,
+              "canceling the folder picker keeps the current image and permits retrying")
+        directoryAccess.signal()
+        restricted.refreshFolderGallery(navigateBy: -1)
+        check(waitForCheck { restricted.asset?.url == first } &&
+              restricted.gallery.urls == [first, second, broken, svg] && !restricted.needsFolderAccess,
+              "permission recovery loads sorted image neighbors and completes the previous-image action")
+        restricted.next(nil)
+        check(waitForCheck { restricted.asset?.url == second }, "navigation works in both directions after folder access")
+        restricted.window?.close()
+
+        let finderQueue = OperationQueue()
+        finderQueue.isSuspended = true
+        let inheritedAccess = DispatchSemaphore(value: 0)
+        let finder = ViewerController(imagePipeline: ImagePipeline(queue: finderQueue), scanFolder: { directory, sort, descending in
+            guard inheritedAccess.wait(timeout: .now()) == .success else { throw CocoaError(.fileReadNoPermission) }
+            return try Gallery.scan(directory, sort: sort, descending: descending)
+        })
+        let delegate = AppDelegate()
+        delegate.viewers = [finder]
+        delegate.application(NSApp, openFiles: [second.path])
+        check(waitForCheck { finder.needsFolderAccess } && finder.window?.isVisible == false &&
+              finder.window?.attachedSheet == nil, "Finder permission denial waits for the first image window")
+        finderQueue.isSuspended = false
+        check(waitForCheck(timeout: 2) { finder.window?.attachedSheet is NSOpenPanel } && finder.asset?.url == second,
+              "Finder opens the folder authorization sheet automatically with the original image")
+        (finder.window?.attachedSheet as? NSOpenPanel)?.cancel(nil)
+        check(waitForCheck { finder.window?.attachedSheet == nil } && finder.gallery.current == second &&
+              finder.needsFolderAccess, "canceling the automatic sheet leaves the image and navigation retry available")
+        let finderLoad = finder.loadSerial
+        inheritedAccess.signal()
+        delegate.foldersAuthorized([folder.deletingLastPathComponent()])
+        check(waitForCheck { finder.gallery.urls == [first, second, broken, svg] } &&
+              finder.gallery.current == second && finder.loadSerial == finderLoad,
+              "granting an ancestor loads neighboring images without reopening the selected image")
+        inheritedAccess.signal()
+        delegate.application(NSApp, openFiles: [second.path])
+        check(waitForCheck { finder.gallery.urls == [first, second, broken, svg] && finder.asset?.url == second } &&
+              finder.window?.attachedSheet == nil, "Finder loads a readable folder without prompting")
+        finder.window?.close()
 
         let lateScanGate = DispatchSemaphore(value: 0)
         let race = ViewerController(scanFolder: { _, _, _ in

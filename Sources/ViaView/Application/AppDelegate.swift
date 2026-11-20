@@ -56,7 +56,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenu
     }
     func application(_ sender: NSApplication, openFiles filenames: [String]) {
         let viewer = viewerForOpening()
-        viewer.openURLs(filenames.map { URL(fileURLWithPath: $0) }); viewer.showWindow(nil)
+        viewer.openURLs(filenames.map { URL(fileURLWithPath: $0) }, offerFolderAccess: true)
+        viewer.showWindow(nil)
         sender.reply(toOpenOrPrint: .success)
     }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

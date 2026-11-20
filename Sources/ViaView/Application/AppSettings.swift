@@ -69,21 +69,11 @@ extension AppDelegate {
         UserDefaults.standard.set(viewers.compactMap { $0.gallery.current?.path }, forKey: "openImagePaths")
     }
     func foldersAuthorized(_ folders: [URL]) {
+        let authorizedPaths = folders.map { $0.resolvingSymlinksInPath().pathComponents }
         for viewer in viewers where viewer.needsFolderAccess {
-            guard let current = viewer.gallery.current, folders.contains(where: { current.path.hasPrefix($0.path.hasSuffix("/") ? $0.path : $0.path + "/") }) else { continue }
-            let sort = viewer.sort, descending = viewer.descending, serial = viewer.loadSerial
-            DispatchQueue.global(qos: .userInitiated).async { [weak viewer] in
-                let files = try? Gallery.scan(current.deletingLastPathComponent(), sort: sort, descending: descending)
-                DispatchQueue.main.async {
-                    guard let viewer, viewer.loadSerial == serial, viewer.gallery.current == current, let files, files.contains(current) else { return }
-                    // Refresh navigation without discarding the current zoom or unsaved edits.
-                    viewer.galleryRevision += 1
-                    viewer.gallery = Gallery(urls: viewer.excludingRecycledFiles(files), selected: current); viewer.needsFolderAccess = false
-                    // Folder authorization may finish after a newer sort choice.
-                    if viewer.sort != sort || viewer.descending != descending { viewer.reorderGallery() }
-                    viewer.updateUI()
-                }
-            }
+            guard let current = viewer.gallery.current else { continue }
+            let imageFolder = current.deletingLastPathComponent().resolvingSymlinksInPath().pathComponents
+            if authorizedPaths.contains(where: { imageFolder.starts(with: $0) }) { viewer.refreshFolderGallery() }
         }
     }
 }

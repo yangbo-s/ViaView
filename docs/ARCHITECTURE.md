@@ -72,7 +72,7 @@ Operation 取消减少无用工作，序号／身份检查决定结果是否仍�
 
 ## 权限、标签和设置
 
-`FileAccessStore` 从现有 UserDefaults 的 `bookmarks` 恢复安全范围访问，保留用户明确选择的 URL。移除文件夹授权停止对应访问并移除保存记录，不删除文件；单文件授权可以独立保留。启动恢复仅尝试仍可读的保存路径，不能把会话路径当作新的磁盘授权。
+`FileAccessStore` 在目录扫描前恢复安全范围访问。文件夹授权存在 `folderBookmarks`，最近选择的单文件存在 `recentFileBookmarks`，最多保留 60 条。旧版的 `bookmarks` 继续参与恢复和移除。父文件夹授权覆盖其子文件夹。会话恢复只打开仍可读取的路径。
 
 `Resources/Info.plist` 的 bundle identifier 继续为 `local.ChengTu`，用于继承已有沙盒容器、偏好与书签；Package、target、入口、资源 bundle 和开发文件名均使用 ViaView。修改身份需要独立的数据迁移方案，不能当作普通文本重命名。
 

@@ -88,9 +88,13 @@ func runDesignChecks(_ check: (Bool, String) -> Void) {
     let window = settings.window!
     let tabs = window.contentViewController as! SettingsTabViewController
     let original = window.frame
+    let titleHeight = original.height - window.contentLayoutRect.height
+    let availableHeight = window.screen!.visibleFrame.insetBy(dx: 0, dy: 12).height
     tabs.selectedTabViewItemIndex = 4
     let compact = window.frame
-    check(compact.height < original.height - 200 && abs(compact.maxY - original.maxY) < 1 && compact.width == original.width,
+    check(abs(original.height - min(590 + titleHeight, availableHeight)) < 1 &&
+          abs(compact.height - min(330 + titleHeight, availableHeight)) < 1 &&
+          abs(compact.maxY - original.maxY) < 1 && compact.width == original.width,
           "update settings shrink while preserving the tab bar and width")
     check(window.firstResponder === window, "switching settings does not preselect an editable control")
     tabs.selectedTabViewItemIndex = 0
